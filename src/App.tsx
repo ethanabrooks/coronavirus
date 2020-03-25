@@ -2,8 +2,7 @@
 import React from "react";
 import "./App.css";
 import "../node_modules/react-vis/dist/style.css";
-import * as admin from "firebase-admin";
-import BackgroundTimer from "react-native-background-timer";
+//import * as admin from "firebase-admin";
 
 import {
   XYPlot,
@@ -14,6 +13,8 @@ import {
   LineSeries,
   LineSeriesPoint
 } from "react-vis";
+
+import { useState, useEffect } from "react";
 
 import { List } from "immutable";
 
@@ -30,6 +31,14 @@ type State =
 
 const App: React.FC<{}> = () => {
   const [state, setState] = React.useState<State>({ type: "loading" });
+  //rest of code will be performing for iOS on background too
+  //
+  useEffect(() => {
+    const interval = setInterval(() => {
+      console.log("This will run every second!");
+    }, 1000);
+    return () => clearInterval(interval);
+  }, []);
 
   React.useEffect(() => {
     fetch("https://covidtracking.com/api/states/daily")
