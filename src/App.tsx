@@ -1,3 +1,4 @@
+/// <reference path="../vendor/react-vis.d.ts"/>
 import React from "react";
 import "./App.css";
 import "../node_modules/react-vis/dist/style.css";
@@ -11,47 +12,36 @@ import {
   VerticalBarSeriesCanvas
 } from "react-vis";
 
+type Entry = {
+  state: string,
+  positive: number,
+};
+
+type State = {type: "loading"} | {type: "error", error: any} | {type: "loaded", data: Entry[]}
+
 export default function App() {
-  const [state, setState] = React.useState({
-    error: null,
-    isLoaded: false,
-    data: [],
-    useCanvas: false
-  })
+  const [state, setState] = React.useState<State>({type: "loading"});
 
   React.useEffect(() => {
     fetch("https://covidtracking.com/api/states.json")
       .then(res => res.json())
       .then(
-        result => {
-          setState({
-            isLoaded: true,
-            data: result
-          });
-        },
-        // Note: it's important to handle errors here
-        // instead of a catch() block so that we don't swallow
-        // exceptions from actual bugs in components.
-        error => {
-          setState({
-            isLoaded: true,
-            error
-          });
-        }
+        data => setState({type: "loaded", data}),
+        error => setState({type: "error", error})
       );
   }, []);
 
-  if (state.error) {
-    return <div>Error: {state.error.message}</div>;
-  } else if (!state.isLoaded) {
+  if (state.type === 'loading') {
     return <div>Loading...</div>;
-  } else {
-    const chart = state.data.map(d => ({ x: d.state, y: d.positive }));
-    chart.sort((d1, d2) => d2.y - d1.y);
+  } else if (state.type === 'error') {
+    return <div>Error: {state.error.message}</div>;
+  } else if (state.type === 'loaded') {
+    type Point = {x: string, y: number};
+    const chart = state.data.map((d: Entry) => ({ x: d.state, y: d.positive }));
+    chart.sort((d1: Point, d2: Point) => d2.y - d1.y);
 
-    console.log(chart);
-
-    const BarSeries = state.useCanvas
+    const useCanvas = false;
+    const BarSeries = useCanvas
       ? VerticalBarSeriesCanvas
       : VerticalBarSeries;
     return (
