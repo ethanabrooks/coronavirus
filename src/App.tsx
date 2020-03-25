@@ -14,8 +14,6 @@ import {
   LineSeriesPoint
 } from "react-vis";
 
-import { useState, useEffect } from "react";
-
 import { List } from "immutable";
 
 type Entry = {
@@ -33,7 +31,7 @@ const App: React.FC<{}> = () => {
   const [state, setState] = React.useState<State>({ type: "loading" });
   //rest of code will be performing for iOS on background too
   //
-  useEffect(() => {
+  React.useEffect(() => {
     const interval = setInterval(() => {
       console.log("This will run every second!");
     }, 1000);
