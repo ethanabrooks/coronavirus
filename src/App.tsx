@@ -10,7 +10,7 @@ import {
   VerticalGridLines,
   HorizontalGridLines,
   LineSeries,
-  LineSeriesPoint
+  LineSeriesPoint,
 } from "react-vis";
 
 import { List } from "immutable";
@@ -31,10 +31,10 @@ const App: React.FC<{}> = () => {
 
   React.useEffect(() => {
     fetch("https://covidtracking.com/api/states/daily")
-      .then(res => res.json())
+      .then((res) => res.json())
       .then(
-        data => setState({ type: "loaded", data }),
-        error => setState({ type: "error", error })
+        (data) => setState({ type: "loaded", data }),
+        (error) => setState({ type: "error", error })
       );
   }, []);
 
@@ -46,12 +46,12 @@ const App: React.FC<{}> = () => {
     case "loaded":
       const data: [string, LineSeriesPoint[]][] = List(state.data)
         .groupBy((e: Entry) => e.state)
-        .map(entries => entries.valueSeq().toList())
+        .map((entries) => entries.valueSeq().toList())
         .map((entries: List<Entry>) =>
           entries
             .map((e: Entry) => ({
               x: new Date(e.dateChecked).valueOf(),
-              y: e.positive
+              y: e.positive,
             }))
             .sort((p1: LineSeriesPoint, p2: LineSeriesPoint) => p1.x - p2.x)
             .toArray()
