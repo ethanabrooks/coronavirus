@@ -65,8 +65,8 @@ const App: React.FC<{}> = () => {
             <HorizontalGridLines />
             <XAxis />
             <YAxis />
-            {data.map((point: [string, LineSeriesPoint[]]) => (
-              <LineSeries className={point[0]} data={point[1]} />
+            {data.map(([className, points]: [string, LineSeriesPoint[]]) => (
+              <LineSeries className={className} data={points} />
             ))}
           </XYPlot>
         </div>
