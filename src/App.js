@@ -53,6 +53,7 @@ class App extends Component {
         const chart = data.map(d => {
           return { x: d.state, y: d.positive };
         });
+        chart.sort((d1, d2) => d2.y - d1.y);
 
         console.log(chart);
 
