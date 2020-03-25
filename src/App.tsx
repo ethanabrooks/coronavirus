@@ -19,7 +19,7 @@ type Entry = {
 
 type State = {type: "loading"} | {type: "error", error: any} | {type: "loaded", data: Entry[]}
 
-export default function App() {
+const App: React.FC<{}> = () => {
   const [state, setState] = React.useState<State>({type: "loading"});
 
   React.useEffect(() => {
@@ -31,11 +31,12 @@ export default function App() {
       );
   }, []);
 
-  if (state.type === 'loading') {
+  switch (state.type) {
+  case 'loading':
     return <div>Loading...</div>;
-  } else if (state.type === 'error') {
+  case 'error':
     return <div>Error: {state.error.message}</div>;
-  } else if (state.type === 'loaded') {
+  case 'loaded':
     type Point = {x: string, y: number};
     const chart = state.data.map((d: Entry) => ({ x: d.state, y: d.positive }));
     chart.sort((d1: Point, d2: Point) => d2.y - d1.y);
@@ -57,3 +58,5 @@ export default function App() {
     );
   }
 }
+
+export default App;
