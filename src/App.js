@@ -17,7 +17,7 @@ class App extends Component {
     this.state = {
       error: null,
       isLoaded: false,
-      data: []
+      result: []
     };
   }
 
@@ -28,7 +28,7 @@ class App extends Component {
         result => {
           this.setState({
             isLoaded: true,
-            data: result
+            result
           });
         },
         // Note: it's important to handle errors here
@@ -43,19 +43,19 @@ class App extends Component {
       );
   }
   render() {
-    const { error, isLoaded, data } = this.state;
-    if (data !== undefined) {
+    const { error, isLoaded, result } = this.state;
+    if (result !== undefined) {
       if (error) {
         return <div>Error: {error.message}</div>;
       } else if (!isLoaded) {
         return <div>Loading...</div>;
       } else {
-        const chart = data.map(d => {
+        const data = result.map(d => {
           return { x: d.state, y: d.positive };
         });
-        chart.sort((d1, d2) => d2.y - d1.y);
+        data.sort((d1, d2) => d2.y - d1.y);
 
-        console.log(chart);
+        console.log(data);
 
         const { useCanvas } = this.state;
         const BarSeries = useCanvas
@@ -68,7 +68,7 @@ class App extends Component {
               <HorizontalGridLines />
               <XAxis />
               <YAxis />
-              <BarSeries className="vertical-bar-series-example" data={chart} />
+              <BarSeries className="vertical-bar-series-example" data={data} />
             </XYPlot>
           </div>
         );
