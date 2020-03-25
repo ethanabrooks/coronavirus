@@ -2,6 +2,8 @@
 import React from "react";
 import "./App.css";
 import "../node_modules/react-vis/dist/style.css";
+import * as admin from "firebase-admin";
+import BackgroundTimer from "react-native-background-timer";
 
 import {
   XYPlot,
