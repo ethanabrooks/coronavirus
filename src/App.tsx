@@ -9,13 +9,11 @@ import {
   YAxis,
   VerticalGridLines,
   HorizontalGridLines,
-  VerticalBarSeries,
   LineSeries,
-  LineSeriesPoint,
-  VerticalBarSeriesCanvas
+  LineSeriesPoint
 } from "react-vis";
 
-import { List, Collection } from "immutable";
+import { List } from "immutable";
 
 type Entry = {
   state: string;
@@ -46,11 +44,7 @@ const App: React.FC<{}> = () => {
     case "error":
       return <div>Error: {state.error.message}</div>;
     case "loaded":
-      const t: [string, Entry[]][] = List(state.data)
-        .groupBy((e: Entry) => e.state)
-        .map(e => e.valueSeq().toArray())
-        .toArray();
-      const mydata: [string, LineSeriesPoint[]][] = List(state.data)
+      const data: [string, LineSeriesPoint[]][] = List(state.data)
         .groupBy((e: Entry) => e.state)
         .map(entries => entries.valueSeq().toList())
         .map((entries: List<Entry>) =>
@@ -59,33 +53,25 @@ const App: React.FC<{}> = () => {
               x: new Date(e.dateChecked).valueOf(),
               y: e.positive
             }))
+            .sort((p1: LineSeriesPoint, p2: LineSeriesPoint) => p1.x - p2.x)
             .toArray()
         )
         .toArray();
 
       return (
         <div>
-          <XYPlot xType="ordinal" width={3000} height={300} xDistance={100}>
+          <XYPlot xType="ordinal" width={1300} height={500}>
             <VerticalGridLines />
             <HorizontalGridLines />
             <XAxis />
             <YAxis />
-            {mydata.map(
-              (
-                value: [string, LineSeriesPoint[]],
-                index: number,
-                array: [string, LineSeriesPoint[]][]
-              ) => (
-                <LineSeries className={value[0]} data={value[1]} />
-              )
-            )}
+            {data.map((point: [string, LineSeriesPoint[]]) => (
+              <LineSeries className={point[0]} data={point[1]} />
+            ))}
           </XYPlot>
         </div>
       );
   }
 };
-//{data.map(props => (
-//<LineSeries {...props} />
-//))}
 
 export default App;
