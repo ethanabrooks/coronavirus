@@ -31,12 +31,6 @@ const App: React.FC<{}> = () => {
   const [state, setState] = React.useState<State>({ type: "loading" });
   //rest of code will be performing for iOS on background too
   //
-  React.useEffect(() => {
-    const interval = setInterval(() => {
-      console.log("This will run every second!");
-    }, 1000);
-    return () => clearInterval(interval);
-  }, []);
 
   React.useEffect(() => {
     fetch("https://covidtracking.com/api/states/daily")
@@ -67,12 +61,31 @@ const App: React.FC<{}> = () => {
         )
         .toArray();
 
+      //<VerticalGridLines />
       return (
         <div>
           <XYPlot xType="ordinal" width={1300} height={500}>
-            <VerticalGridLines />
             <HorizontalGridLines />
-            <XAxis />
+            <XAxis
+              tickFormat={d => {
+                const dtf = new Intl.DateTimeFormat("en", {
+                  year: "numeric",
+                  month: "short",
+                  day: "2-digit"
+                });
+                const [
+                  { value: mo },
+                  ,
+                  { value: da },
+                  ,
+                  { value: ye }
+                ] = dtf.formatToParts(d);
+
+                return [mo, da, ye].toString();
+              }}
+              height={200}
+              tickLabelAngle={-20}
+            />
             <YAxis />
             {data.map(([className, points]: [string, LineSeriesPoint[]]) => (
               <LineSeries className={className} data={points} />
