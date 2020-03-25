@@ -2,6 +2,7 @@
 import React from "react";
 import "./App.css";
 import "../node_modules/react-vis/dist/style.css";
+
 import {
   XYPlot,
   XAxis,
@@ -9,12 +10,16 @@ import {
   VerticalGridLines,
   HorizontalGridLines,
   VerticalBarSeries,
+  LineSeries,
   VerticalBarSeriesCanvas
 } from "react-vis";
+
+import { List, Map, Collection } from "immutable";
 
 type Entry = {
   state: string;
   positive: number;
+  dateChecked: Date;
 };
 
 type State =
@@ -26,7 +31,7 @@ const App: React.FC<{}> = () => {
   const [state, setState] = React.useState<State>({ type: "loading" });
 
   React.useEffect(() => {
-    fetch("https://covidtracking.com/api/states.json")
+    fetch("https://covidtracking.com/api/states/daily")
       .then(res => res.json())
       .then(
         data => setState({ type: "loaded", data }),
@@ -40,12 +45,22 @@ const App: React.FC<{}> = () => {
     case "error":
       return <div>Error: {state.error.message}</div>;
     case "loaded":
-      type Point = { x: string; y: number };
+      type Point = { x: Date; y: number };
+      const data: Collection.Keyed<string, Collection<number, Point>> = List(
+        state.data
+      )
+        .groupBy((e: Entry) => e.state)
+        .map((entries: Collection<number, Entry>) =>
+          entries.map((e: Entry) => ({
+            x: new Date(e.dateChecked),
+            y: e.positive
+          }))
+        );
+      //console.log(data);
       const chart = state.data.map((d: Entry) => ({
         x: d.state,
         y: d.positive
       }));
-      chart.sort((d1: Point, d2: Point) => d2.y - d1.y);
 
       const useCanvas = false;
       const BarSeries = useCanvas ? VerticalBarSeriesCanvas : VerticalBarSeries;
