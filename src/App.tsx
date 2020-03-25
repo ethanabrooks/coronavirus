@@ -11,10 +11,11 @@ import {
   HorizontalGridLines,
   VerticalBarSeries,
   LineSeries,
+  LineSeriesPoint,
   VerticalBarSeriesCanvas
 } from "react-vis";
 
-import { List, Map, Collection } from "immutable";
+import { List, Collection } from "immutable";
 
 type Entry = {
   state: string;
@@ -45,25 +46,23 @@ const App: React.FC<{}> = () => {
     case "error":
       return <div>Error: {state.error.message}</div>;
     case "loaded":
-      type Point = { x: Date; y: number };
-      const data: Collection.Keyed<string, Collection<number, Point>> = List(
-        state.data
-      )
+      const t: [string, Entry[]][] = List(state.data)
         .groupBy((e: Entry) => e.state)
-        .map((entries: Collection<number, Entry>) =>
-          entries.map((e: Entry) => ({
-            x: new Date(e.dateChecked),
-            y: e.positive
-          }))
-        );
-      //console.log(data);
-      const chart = state.data.map((d: Entry) => ({
-        x: d.state,
-        y: d.positive
-      }));
+        .map(e => e.valueSeq().toArray())
+        .toArray();
+      const mydata: [string, LineSeriesPoint[]][] = List(state.data)
+        .groupBy((e: Entry) => e.state)
+        .map(entries => entries.valueSeq().toList())
+        .map((entries: List<Entry>) =>
+          entries
+            .map((e: Entry) => ({
+              x: new Date(e.dateChecked).valueOf(),
+              y: e.positive
+            }))
+            .toArray()
+        )
+        .toArray();
 
-      const useCanvas = false;
-      const BarSeries = useCanvas ? VerticalBarSeriesCanvas : VerticalBarSeries;
       return (
         <div>
           <XYPlot xType="ordinal" width={3000} height={300} xDistance={100}>
@@ -71,11 +70,22 @@ const App: React.FC<{}> = () => {
             <HorizontalGridLines />
             <XAxis />
             <YAxis />
-            <BarSeries className="vertical-bar-series-example" data={chart} />
+            {mydata.map(
+              (
+                value: [string, LineSeriesPoint[]],
+                index: number,
+                array: [string, LineSeriesPoint[]][]
+              ) => (
+                <LineSeries className={value[0]} data={value[1]} />
+              )
+            )}
           </XYPlot>
         </div>
       );
   }
 };
+//{data.map(props => (
+//<LineSeries {...props} />
+//))}
 
 export default App;
