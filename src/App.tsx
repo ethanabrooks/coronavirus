@@ -155,9 +155,11 @@ const App: React.FC<{}> = () => {
 
       const chart_data = () => {
         if (state.selected) {
+          const left = state.selected.left;
+          const right = state.selected.right;
           return state.data.slice(
-            state.selected.left,
-            state.selected.right + 1
+            Math.min(left, right),
+            Math.max(left, right) + 1
           );
         }
         return state.data;
@@ -171,7 +173,11 @@ const App: React.FC<{}> = () => {
         const right = state.data.get(state.selecting.right)?.get("date");
 
         return left && right ? (
-          <ReferenceArea x1={left} x2={right} strokeOpacity={0.3} />
+          <ReferenceArea
+            x1={Math.min(left, right)}
+            x2={Math.max(left, right)}
+            strokeOpacity={0.3}
+          />
         ) : null;
       };
       const getCases = (s: string): number => state.latest_data.get(s, 0);

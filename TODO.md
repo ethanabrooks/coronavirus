@@ -1,1 +1,2 @@
-- Select states to turn on and off
+- percentage of population
+- auto-detect state
