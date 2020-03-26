@@ -9,7 +9,7 @@ import {
   YAxis,
   Tooltip
 } from "recharts";
-import { OrderedMap, Map, List, Collection, Set } from "immutable";
+import { Seq, OrderedMap, Map, List, Collection, Set } from "immutable";
 
 type Entry = {
   state: string;
@@ -26,6 +26,7 @@ type State =
   | {
       type: "loaded";
       data: Data;
+    states: Seq.Indexed<string>
       excluded: Set<string>;
       highlighted: null | string;
       window_dimensions: { innerWidth: number; innerHeight: number };
@@ -80,9 +81,20 @@ const App: React.FC<{}> = () => {
             .toList()
 
             .sortBy((m: Map<string, number>) => m.get("date"));
+
+      const most_recent_data: OrderedMap<string, number> = data.last();
+      if (most_recent_data == null) {
+        return <div>Error: "Empty data"</div>;
+      }
+
+      const states: Seq.Indexed<string> = most_recent_data
+        .remove("date")
+        .sortBy((v, k) => -v)
+        .keySeq();
           setState({
             type: "loaded",
             data,
+            states,
             excluded: Set(),
             highlighted: null,
             window_dimensions: window,
@@ -105,16 +117,6 @@ const App: React.FC<{}> = () => {
         month: "short",
         day: "2-digit"
       });
-      const most_recent_data: OrderedMap<string, number> = state.data.last();
-      if (most_recent_data == null) {
-        return <div>Error: "Empty data"</div>;
-      }
-
-      const states = most_recent_data
-        .remove("date")
-        .sortBy((v, k) => -v)
-        .keySeq()
-        .filterNot(s => state.excluded.includes(s));
 
       const getStroke = (s: String) => {
         if (state.highlighted === s) {
@@ -221,7 +223,7 @@ const App: React.FC<{}> = () => {
                 });
               }}
             >
-              {states.toArray().map((s: string) => {
+              {state.states.filterNot(s => state.excluded.includes(s)).toArray().map((s: string) => {
                 return (
                   <Area
                     key={s}
