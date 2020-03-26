@@ -179,7 +179,7 @@ const App: React.FC<{}> = () => {
           <div className="chart">
             <AreaChart
               width={width}
-              height={height - 100}
+              height={height}
               data={chart_data().toJS()}
               margin={{ top: 10, right: 10, bottom: 10, left: 10 }}
               onMouseDown={e => {
