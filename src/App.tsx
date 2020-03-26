@@ -5,11 +5,13 @@ import {
   XAxis,
   LineChart,
   Line,
+  AreaChart,
+  Area,
   CartesianGrid,
   YAxis,
   Tooltip
 } from "recharts";
-import { Map, List, Collection } from "immutable";
+import { Map, List, Collection, Set } from "immutable";
 
 type Entry = {
   state: string;
@@ -20,63 +22,12 @@ type Entry = {
 type State =
   | { type: "loading" }
   | { type: "error"; error: any }
-  | { type: "loaded"; data: Entry[] };
-
-const colors = [
-  "#ff0079",
-  "#fd1c7d",
-  "#fb2b80",
-  "#fa3584",
-  "#f83e88",
-  "#f6468b",
-  "#f44d8f",
-  "#f25393",
-  "#ef5996",
-  "#ed5f9a",
-  "#eb649e",
-  "#e969a1",
-  "#e66ea5",
-  "#e472a8",
-  "#e177ac",
-  "#df7baf",
-  "#dc7fb2",
-  "#da83b6",
-  "#d787b9",
-  "#d48bbc",
-  "#d18fc0",
-  "#ce92c3",
-  "#cb96c6",
-  "#c89ac9",
-  "#c59dcc",
-  "#c2a1cf",
-  "#bea4d2",
-  "#bba7d5",
-  "#b7abd8",
-  "#b4aeda",
-  "#b0b1dd",
-  "#adb4e0",
-  "#a9b7e2",
-  "#a5bae5",
-  "#a1bde7",
-  "#9dc0e9",
-  "#99c3ec",
-  "#95c6ee",
-  "#90c9f0",
-  "#8cccf2",
-  "#88cff3",
-  "#83d2f5",
-  "#7fd4f7",
-  "#7ad7f8",
-  "#76dafa",
-  "#71ddfb",
-  "#6cdffc",
-  "#68e2fd",
-  "#63e4fe",
-  "#5fe7fe",
-  "#5beaff",
-  "#57ecff",
-  "#53efff"
-];
+  | {
+      type: "loaded";
+      data: Entry[];
+      excluded: Set<string>;
+      highlighted: null | string;
+    };
 
 const App: React.FC<{}> = () => {
   const [state, setState] = React.useState<State>({ type: "loading" });
@@ -87,7 +38,13 @@ const App: React.FC<{}> = () => {
     fetch("https://covidtracking.com/api/states/daily")
       .then(res => res.json())
       .then(
-        data => setState({ type: "loaded", data }),
+        data =>
+          setState({
+            type: "loaded",
+            data,
+            excluded: Set(),
+            highlighted: null
+          }),
         error => setState({ type: "error", error })
       );
   }, []);
@@ -118,12 +75,6 @@ const App: React.FC<{}> = () => {
       if (typeof most_recent_data === "undefined") {
         return <div>Error: "Empty data"</div>;
       }
-      const states: string[] = most_recent_data
-        .sortBy((v, k) => -v)
-        .keySeq()
-        .toArray();
-      console.log(states);
-
       const data = nested_data
         .entrySeq()
         .map(([date, cases]) =>
@@ -133,32 +84,99 @@ const App: React.FC<{}> = () => {
 
         .sortBy((m: Map<string, number>) => m.get("date"));
 
+      const states = most_recent_data
+        .sortBy((v, k) => -v)
+        .keySeq()
+        .filterNot(s => state.excluded.includes(s))
+        .toArray();
+
+      const getStroke = (s: String) => {
+        if (state.highlighted === s) {
+          return "#ff0079";
+        } else {
+          return "#00b6c6";
+        }
+      };
+
+      const getOpacity = (s: String) => {
+        switch (state.highlighted) {
+          case s:
+            return 1;
+          case null:
+            return 1;
+          default:
+            return 0.3;
+        }
+      };
+
       return (
         <div>
-          <LineChart
-            width={1000}
-            height={600}
-            data={data.toJS()}
-            margin={{ top: 10, right: 10, bottom: 10, left: 10 }}
-          >
-            {states.map((s: string, i: number) => {
-              return <Line type="monotone" dataKey={s} stroke={colors[i]} />;
-            })}
-            <XAxis
-              dataKey={e => {
-                const [
-                  { value: mo },
-                  { value: da },
-                  { value: ye }
-                ] = dtf.formatToParts(new Date(e.date));
-                return `${mo} ${da} ${ye}`;
-              }}
-            />
-            <CartesianGrid stroke="#ccc" strokeDasharray="5 5" />
-            <XAxis dataKey="name" />
-            <YAxis />
-            <Tooltip />
-          </LineChart>
+          <div className="chart">
+            <AreaChart
+              width={1000}
+              height={600}
+              data={data.toJS()}
+              margin={{ top: 10, right: 10, bottom: 10, left: 10 }}
+            >
+              {states.map((s: string, i: number) => {
+                return (
+                  <Area
+                    type="monotone"
+                    dataKey={s}
+                    stroke={getStroke(s)}
+                    opacity={getOpacity(s)}
+                    isAnimationActive={false}
+                    onMouseOver={d => {
+                      setState({
+                        type: "loaded",
+                        data: state.data,
+                        highlighted: d.dataKey,
+                        excluded: state.excluded
+                      });
+                    }}
+                    onClick={d => {
+                      setState({
+                        type: "loaded",
+                        data: state.data,
+                        highlighted: state.highlighted,
+                        excluded: state.excluded.add(d.dataKey)
+                      });
+                    }}
+                  />
+                );
+              })}
+              <XAxis
+                dataKey={e => {
+                  const [
+                    { value: mo },
+                    { value: da },
+                    { value: ye }
+                  ] = dtf.formatToParts(new Date(e.date));
+                  return `${mo} ${da} ${ye}`;
+                }}
+              />
+              <CartesianGrid stroke="#ccc" strokeDasharray="5 5" />
+              <XAxis dataKey="name" />
+              <YAxis />
+              <Tooltip isAnimationActive={false} offset={-200} />
+            </AreaChart>
+          </div>
+          <div className="excluded">
+            {state.excluded.map((s: string) => (
+              <h1
+                onClick={d => {
+                  setState({
+                    type: "loaded",
+                    data: state.data,
+                    highlighted: state.highlighted,
+                    excluded: state.excluded.remove(s)
+                  });
+                }}
+              >
+                {s}
+              </h1>
+            ))}
+          </div>
         </div>
       );
   }
