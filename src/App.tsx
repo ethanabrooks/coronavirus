@@ -170,18 +170,26 @@ const App: React.FC<{}> = () => {
                   selected: null
                 })
               }
-              onMouseUp={e =>
-                state.selecting &&
-                setState({
-                  type: "loaded",
-                  data: state.data,
-                  highlighted: state.highlighted,
-                  excluded: state.excluded,
-                  window_dimensions: window,
-                  selecting: null,
-                  selected: null
-                })
-              }
+              onMouseUp={e => {
+                if (state.selecting) {
+                  const [left, right] = state.selecting;
+                  return setState({
+                    type: "loaded",
+                    data: state.data,
+                    highlighted: state.highlighted,
+                    excluded: state.excluded,
+                    window_dimensions: window,
+                    selecting: null,
+                    selected: [
+                      left,
+                      {
+                        label: e.activeLabel,
+                        index: left.index + e.activeTooltipIndex
+                      }
+                    ]
+                  });
+                }
+              }}
             >
               {states.map((s: string) => {
                 return (
@@ -200,7 +208,7 @@ const App: React.FC<{}> = () => {
                         excluded: state.excluded,
                         window_dimensions: window,
                         selecting: state.selecting,
-                        selected: null
+                        selected: state.selected
                       });
                     }}
                     onClick={d => {
@@ -211,7 +219,7 @@ const App: React.FC<{}> = () => {
                         excluded: state.excluded.add(d.dataKey),
                         window_dimensions: window,
                         selecting: state.selecting,
-                        selected: null
+                        selected: state.selected
                       });
                     }}
                   />
@@ -261,7 +269,7 @@ const App: React.FC<{}> = () => {
                       excluded: state.excluded.remove(s),
                       window_dimensions: window,
                       selecting: state.selecting,
-                      selected: null
+                      selected: state.selected
                     });
                   }}
                 >
