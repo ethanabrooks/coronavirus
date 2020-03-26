@@ -10,6 +10,11 @@ type Entry = {
   dateChecked: Date;
 };
 
+type RefArea = {
+  left: number | null;
+  right: number | null;
+};
+
 type State =
   | { type: "loading" }
   | { type: "error"; error: any }
@@ -19,6 +24,7 @@ type State =
       excluded: Set<string>;
       highlighted: null | string;
       window_dimensions: { innerWidth: number; innerHeight: number };
+      refArea: null | RefArea;
     };
 
 const highlight_color = "#ff0079";
@@ -35,7 +41,8 @@ const App: React.FC<{}> = () => {
           data: state.data,
           highlighted: state.highlighted,
           excluded: state.excluded,
-          window_dimensions: window
+          window_dimensions: window,
+          refArea: null
         });
       }
     };
@@ -55,7 +62,8 @@ const App: React.FC<{}> = () => {
             data,
             excluded: Set(),
             highlighted: null,
-            window_dimensions: window
+            window_dimensions: window,
+            refArea: null
           }),
         error => setState({ type: "error", error })
       );
@@ -125,6 +133,7 @@ const App: React.FC<{}> = () => {
         innerHeight: height
       }: { innerWidth: number; innerHeight: number } = window;
 
+      //onMouseUp={zoom}
       return (
         <div>
           <div className="chart">
@@ -133,6 +142,33 @@ const App: React.FC<{}> = () => {
               height={height}
               data={data.toJS()}
               margin={{ top: 10, right: 10, bottom: 10, left: 10 }}
+              onMouseDown={e =>
+                setState({
+                  type: "loaded",
+                  data: state.data,
+                  highlighted: state.highlighted,
+                  excluded: state.excluded,
+                  window_dimensions: window,
+                  refArea: {
+                    left: e.activeLabel,
+                    right: state.refArea ? state.refArea.right : null
+                  }
+                })
+              }
+              onMouseMove={e =>
+                state.refArea &&
+                setState({
+                  type: "loaded",
+                  data: state.data,
+                  highlighted: state.highlighted,
+                  excluded: state.excluded,
+                  window_dimensions: window,
+                  refArea: {
+                    left: state.refArea.left,
+                    right: e.activeLabel
+                  }
+                })
+              }
             >
               {states.map((s: string) => {
                 return (
@@ -149,7 +185,8 @@ const App: React.FC<{}> = () => {
                         data: state.data,
                         highlighted: d.dataKey,
                         excluded: state.excluded,
-                        window_dimensions: window
+                        window_dimensions: window,
+                        refArea: state.refArea
                       });
                     }}
                     onClick={d => {
@@ -158,7 +195,8 @@ const App: React.FC<{}> = () => {
                         data: state.data,
                         highlighted: state.highlighted,
                         excluded: state.excluded.add(d.dataKey),
-                        window_dimensions: window
+                        window_dimensions: window,
+                        refArea: state.refArea
                       });
                     }}
                   />
@@ -206,7 +244,8 @@ const App: React.FC<{}> = () => {
                       data: state.data,
                       highlighted: state.highlighted,
                       excluded: state.excluded.remove(s),
-                      window_dimensions: window
+                      window_dimensions: window,
+                      refArea: state.refArea
                     });
                   }}
                 >
