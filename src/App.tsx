@@ -42,13 +42,8 @@ const App: React.FC<{}> = () => {
     const handleResize = () => {
       if (state.type === "loaded") {
         setState({
-          type: "loaded",
-          data: state.data,
-          highlighted: state.highlighted,
-          excluded: state.excluded,
-          window_dimensions: window,
-          selecting: null,
-          selected: null
+          ...state,
+          window_dimensions: window
         });
       }
     };
@@ -188,32 +183,25 @@ const App: React.FC<{}> = () => {
               data={chart_data().toJS()}
               margin={{ top: 10, right: 10, bottom: 10, left: 10 }}
               onMouseDown={e => {
-                setState({
-                  type: "loaded",
-                  data: state.data,
-                  highlighted: state.highlighted,
-                  excluded: state.excluded,
-                  window_dimensions: window,
-                  selecting: {
-                    left: e.activeTooltipIndex,
-                    right: e.activeTooltipIndex
-                  },
-                  selected: null
-                });
+                if (e) {
+                  setState({
+                    ...state,
+                    selecting: {
+                      left: e.activeTooltipIndex,
+                      right: e.activeTooltipIndex
+                    },
+                    selected: null
+                  });
+                }
               }}
               onMouseMove={e => {
                 if (state.selecting && e) {
                   return setState({
-                    type: "loaded",
-                    data: state.data,
-                    highlighted: state.highlighted,
-                    excluded: state.excluded,
-                    window_dimensions: window,
+                    ...state,
                     selecting: {
                       left: state.selecting.left,
                       right: e.activeTooltipIndex
-                    },
-                    selected: null
+                    }
                   });
                 }
               }}
@@ -221,22 +209,14 @@ const App: React.FC<{}> = () => {
                 if (state.selecting && e) {
                   if (state.selecting.left !== state.selecting.right) {
                     return setState({
-                      type: "loaded",
-                      data: state.data,
-                      highlighted: state.highlighted,
-                      excluded: state.excluded,
-                      window_dimensions: window,
+                      ...state,
                       selecting: null,
                       selected: state.selecting
                     });
                   }
                 }
                 return setState({
-                  type: "loaded",
-                  data: state.data,
-                  highlighted: state.highlighted,
-                  excluded: state.excluded,
-                  window_dimensions: window,
+                  ...state,
                   selecting: null,
                   selected: null
                 });
@@ -253,24 +233,15 @@ const App: React.FC<{}> = () => {
                     animationDuration={300}
                     onMouseOver={d => {
                       setState({
-                        type: "loaded",
-                        data: state.data,
+                        ...state,
                         highlighted: d.dataKey,
-                        excluded: state.excluded,
-                        window_dimensions: window,
-                        selecting: state.selecting,
-                        selected: state.selected
+                        excluded: state.excluded
                       });
                     }}
                     onClick={d => {
                       setState({
-                        type: "loaded",
-                        data: state.data,
-                        highlighted: state.highlighted,
-                        excluded: state.excluded.add(d.dataKey),
-                        window_dimensions: window,
-                        selecting: state.selecting,
-                        selected: state.selected
+                        ...state,
+                        excluded: state.excluded.add(d.dataKey)
                       });
                     }}
                   />
@@ -304,13 +275,8 @@ const App: React.FC<{}> = () => {
                 className="hover-red"
                 onClick={d => {
                   setState({
-                    type: "loaded",
-                    data: state.data,
-                    highlighted: state.highlighted,
-                    excluded: state.excluded.remove(s),
-                    window_dimensions: window,
-                    selecting: state.selecting,
-                    selected: state.selected
+                    ...state,
+                    excluded: state.excluded.remove(s)
                   });
                 }}
               >
