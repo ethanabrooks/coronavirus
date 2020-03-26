@@ -134,14 +134,18 @@ const App: React.FC<{}> = () => {
         innerHeight: height
       }: { innerWidth: number; innerHeight: number } = window;
 
-      //onMouseUp={zoom}
+      console.log(state.refArea);
+      const chart_data =
+        state.refArea.left && state.refArea.right
+          ? data.slice(state.refArea.left, state.refArea.right)
+          : data;
       return (
         <div>
           <div className="chart">
             <AreaChart
               width={width}
               height={height}
-              data={data.toJS()}
+              data={chart_data.toJS()}
               margin={{ top: 10, right: 10, bottom: 10, left: 10 }}
               onMouseDown={e =>
                 setState({
@@ -166,7 +170,7 @@ const App: React.FC<{}> = () => {
                   window_dimensions: window,
                   refArea: {
                     left: state.refArea.left,
-                    right: e.activeTooltipIndex
+                    right: state.refArea.left + e.activeTooltipIndex
                   }
                 })
               }
