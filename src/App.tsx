@@ -94,7 +94,7 @@ const App: React.FC<{}> = () => {
             .keySeq()
             .toOrderedSet();
 
-          const latest_data: OrderedSet<[string, number]> = OrderedMap(
+          const latest_data = OrderedMap(
             states.map((s) => {
               const last = data.findLast((d) => d.has(s));
               return [s, last ? last.get(s, 0) : 0];
@@ -173,6 +173,7 @@ const App: React.FC<{}> = () => {
           <ReferenceArea x1={left} x2={right} strokeOpacity={0.3} />
         ) : null;
       };
+      const getCases = (s: string): number => state.latest_data.get(s, 0);
       return (
         <div>
           <div className="title">
@@ -258,17 +259,11 @@ const App: React.FC<{}> = () => {
                         });
                       }}
                       onClick={(d) => {
-                        const latest_data: OrderedMap<
-                          string,
-                          number
-                        > = state.data.last();
-                        const this_states_cases = latest_data.get(d.dataKey, 0);
+                        const thisStateCases = getCases(d.dataKey);
                         setState({
                           ...state,
                           excluded: state.states
-                            .filter(
-                              (s) => latest_data.get(s, 0) > this_states_cases
-                            )
+                            .filter((s) => getCases(s) > thisStateCases)
                             .toSet()
                             .union(state.excluded),
                         });
@@ -298,9 +293,12 @@ const App: React.FC<{}> = () => {
                 key={s}
                 className="hover-red"
                 onClick={(d) => {
+                  const thisStateCases = getCases(s);
                   setState({
                     ...state,
-                    excluded: state.excluded.remove(s),
+                    excluded: state.excluded.filter(
+                      (s) => getCases(s) > thisStateCases
+                    ),
                   });
                 }}
               >
