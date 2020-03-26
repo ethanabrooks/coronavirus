@@ -176,38 +176,56 @@ const App: React.FC<{}> = () => {
               />
               <XAxis dataKey="name" />
               <YAxis orientation="right" />
-              <Tooltip isAnimationActive={false} offset={-200} />
+              <Tooltip
+                isAnimationActive={false}
+                offset={-200}
+                allowEscapeViewBox={{ x: true }}
+              />
             </AreaChart>
           </div>
-          <div className="excluded">
-            {state.excluded.map((s: string) => (
-              <h1
-                id={s}
-                onMouseEnter={d => {
-                  var el = document.getElementById(s);
-                  if (el !== null) {
-                    el.style.color = highlight_color;
-                  }
-                }}
-                onMouseLeave={d => {
-                  var el = document.getElementById(s);
-                  if (el !== null) {
-                    el.style.color = black;
-                  }
-                }}
-                onClick={d => {
-                  setState({
-                    type: "loaded",
-                    data: state.data,
-                    highlighted: state.highlighted,
-                    excluded: state.excluded.remove(s),
-                    window_dimensions: window
-                  });
-                }}
-              >
-                {s}
-              </h1>
-            ))}
+          <div>
+            <div className="title">
+              <h1>Coronavirus Cases</h1>
+            </div>
+            <div className="instructions">
+              <p>
+                Mouse over chart to view data points. Click to remove lines from
+                graphic and resize.{" "}
+                {state.excluded.isEmpty()
+                  ? ""
+                  : "Click on state names to add back to chart."}
+              </p>
+            </div>
+            <div className="excluded">
+              {state.excluded.map((s: string) => (
+                <h2
+                  id={s}
+                  onMouseEnter={d => {
+                    var el = document.getElementById(s);
+                    if (el !== null) {
+                      el.style.color = highlight_color;
+                    }
+                  }}
+                  onMouseLeave={d => {
+                    var el = document.getElementById(s);
+                    if (el !== null) {
+                      el.style.color = black;
+                    }
+                  }}
+                  onClick={d => {
+                    setState({
+                      type: "loaded",
+                      data: state.data,
+                      highlighted: state.highlighted,
+                      excluded: state.excluded.remove(s),
+                      window_dimensions: window
+                    });
+                  }}
+                >
+                  {s}
+                </h2>
+              ))}
+            </div>
           </div>
         </div>
       );

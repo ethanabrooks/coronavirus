@@ -37,11 +37,23 @@
   }
 }
 .chart {
-  float: left
+  float: left;
+}
+
+.title {
+  position: absolute;
+  top: -10px;
+  left: 16px;
+}
+
+.instructions {
+  position: absolute;
+  top: 40px;
+  left: 16px;
 }
 
 .excluded {
-    position: absolute;
-  top: 8px;
+  position: absolute;
+  top: 70px;
   left: 16px;
 }
