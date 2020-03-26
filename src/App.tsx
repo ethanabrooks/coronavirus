@@ -1,16 +1,7 @@
 import React from "react";
 import "./App.css";
 import "../node_modules/react-vis/dist/style.css";
-import {
-  XAxis,
-  LineChart,
-  Line,
-  AreaChart,
-  Area,
-  CartesianGrid,
-  YAxis,
-  Tooltip
-} from "recharts";
+import { XAxis, AreaChart, Area, YAxis, Tooltip } from "recharts";
 import { Map, List, Collection, Set } from "immutable";
 
 type Entry = {
@@ -28,6 +19,10 @@ type State =
       excluded: Set<string>;
       highlighted: null | string;
     };
+
+const highlight_color = "#ff0079";
+const default_color = "#00b6c6";
+const black = "#000000";
 
 const App: React.FC<{}> = () => {
   const [state, setState] = React.useState<State>({ type: "loading" });
@@ -92,9 +87,9 @@ const App: React.FC<{}> = () => {
 
       const getStroke = (s: String) => {
         if (state.highlighted === s) {
-          return "#ff0079";
+          return highlight_color;
         } else {
-          return "#00b6c6";
+          return default_color;
         }
       };
 
@@ -113,8 +108,8 @@ const App: React.FC<{}> = () => {
         <div>
           <div className="chart">
             <AreaChart
-              width={1000}
-              height={600}
+              width={1200}
+              height={800}
               data={data.toJS()}
               margin={{ top: 10, right: 10, bottom: 10, left: 10 }}
             >
@@ -155,15 +150,27 @@ const App: React.FC<{}> = () => {
                   return `${mo} ${da} ${ye}`;
                 }}
               />
-              <CartesianGrid stroke="#ccc" strokeDasharray="5 5" />
               <XAxis dataKey="name" />
-              <YAxis />
+              <YAxis orientation="right" />
               <Tooltip isAnimationActive={false} offset={-200} />
             </AreaChart>
           </div>
           <div className="excluded">
             {state.excluded.map((s: string) => (
               <h1
+                id={s}
+                onMouseEnter={d => {
+                  var el = document.getElementById(s);
+                  if (el !== null) {
+                    el.style.color = highlight_color;
+                  }
+                }}
+                onMouseLeave={d => {
+                  var el = document.getElementById(s);
+                  if (el !== null) {
+                    el.style.color = black;
+                  }
+                }}
                 onClick={d => {
                   setState({
                     type: "loaded",
