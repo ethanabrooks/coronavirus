@@ -18,6 +18,7 @@ type State =
       data: Entry[];
       excluded: Set<string>;
       highlighted: null | string;
+      window_dimensions: { innerWidth: number; innerHeight: number };
     };
 
 const highlight_color = "#ff0079";
@@ -25,8 +26,24 @@ const default_color = "#00b6c6";
 
 const App: React.FC<{}> = () => {
   const [state, setState] = React.useState<State>({ type: "loading" });
-  //rest of code will be performing for iOS on background too
-  //
+
+  React.useEffect(() => {
+    const handleResize = () => {
+      if (state.type === "loaded") {
+        setState({
+          type: "loaded",
+          data: state.data,
+          highlighted: state.highlighted,
+          excluded: state.excluded,
+          window_dimensions: window
+        });
+      }
+    };
+    window.addEventListener("resize", handleResize);
+    return () => {
+      window.removeEventListener("resize", handleResize);
+    };
+  });
 
   React.useEffect(() => {
     fetch("https://covidtracking.com/api/states/daily")
@@ -37,7 +54,8 @@ const App: React.FC<{}> = () => {
             type: "loaded",
             data,
             excluded: Set(),
-            highlighted: null
+            highlighted: null,
+            window_dimensions: window
           }),
         error => setState({ type: "error", error })
       );
@@ -102,13 +120,17 @@ const App: React.FC<{}> = () => {
             return 0.3;
         }
       };
+      const {
+        innerWidth: width,
+        innerHeight: height
+      }: { innerWidth: number; innerHeight: number } = window;
 
       return (
         <div>
           <div className="chart">
             <AreaChart
-              width={1200}
-              height={800}
+              width={width}
+              height={height}
               data={data.toJS()}
               margin={{ top: 10, right: 10, bottom: 10, left: 10 }}
             >
@@ -126,7 +148,8 @@ const App: React.FC<{}> = () => {
                         type: "loaded",
                         data: state.data,
                         highlighted: d.dataKey,
-                        excluded: state.excluded
+                        excluded: state.excluded,
+                        window_dimensions: window
                       });
                     }}
                     onClick={d => {
@@ -134,7 +157,8 @@ const App: React.FC<{}> = () => {
                         type: "loaded",
                         data: state.data,
                         highlighted: state.highlighted,
-                        excluded: state.excluded.add(d.dataKey)
+                        excluded: state.excluded.add(d.dataKey),
+                        window_dimensions: window
                       });
                     }}
                   />
@@ -152,26 +176,44 @@ const App: React.FC<{}> = () => {
               />
               <XAxis dataKey="name" />
               <YAxis orientation="right" />
-              <Tooltip isAnimationActive={false} offset={-200} />
+              <Tooltip
+                isAnimationActive={false}
+                offset={-200}
+                allowEscapeViewBox={{ x: true }}
+              />
             </AreaChart>
           </div>
-          <div className="excluded">
-            {state.excluded.map((s: string) => (
-              <h1
-                key={s}
-                className="hover-red"
-                onClick={d => {
-                  setState({
-                    type: "loaded",
-                    data: state.data,
-                    highlighted: state.highlighted,
-                    excluded: state.excluded.remove(s)
-                  });
-                }}
-              >
-                {s}
-              </h1>
-            ))}
+          <div>
+            <div className="title">
+              <h1>Coronavirus Cases</h1>
+            </div>
+            <div className="instructions">
+              <p>
+                Click to remove lines from graphic and resize.{" "}
+                {state.excluded.isEmpty()
+                  ? ""
+                  : "Click on state names to add back to chart."}
+              </p>
+            </div>
+            <div className="excluded">
+              {state.excluded.map((s: string) => (
+                <h2
+                  key={s}
+                  className="hover-red"
+                  onClick={d => {
+                    setState({
+                      type: "loaded",
+                      data: state.data,
+                      highlighted: state.highlighted,
+                      excluded: state.excluded.remove(s),
+                      window_dimensions: window
+                    });
+                  }}
+                >
+                  {s}
+                </h2>
+              ))}
+            </div>
           </div>
         </div>
       );
