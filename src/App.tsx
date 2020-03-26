@@ -55,7 +55,7 @@ const App: React.FC<{}> = () => {
     };
   });
 
-  React.useMemo(() => {
+  React.useEffect(() => {
     fetch("https://covidtracking.com/api/states/daily")
       .then(res => res.json())
       .then(
