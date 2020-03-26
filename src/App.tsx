@@ -116,6 +116,7 @@ const App: React.FC<{}> = () => {
               {states.map((s: string, i: number) => {
                 return (
                   <Area
+                    key={s}
                     type="monotone"
                     dataKey={s}
                     stroke={getStroke(s)}
