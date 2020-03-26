@@ -1,6 +1,6 @@
 import React from "react";
 import "./App.css";
-import "../node_modules/react-vis/dist/style.css";
+import "react-vis/dist/style.css";
 import { XAxis, AreaChart, Area, YAxis, Tooltip } from "recharts";
 import { Map, List, Collection, Set } from "immutable";
 
@@ -66,7 +66,7 @@ const App: React.FC<{}> = () => {
             .map((e: Entry) => e.positive)
         );
       const most_recent_data = nested_data.maxBy((_, k) => k);
-      if (typeof most_recent_data === "undefined") {
+      if (most_recent_data == null) {
         return <div>Error: "Empty data"</div>;
       }
       const data = nested_data
@@ -112,7 +112,7 @@ const App: React.FC<{}> = () => {
               data={data.toJS()}
               margin={{ top: 10, right: 10, bottom: 10, left: 10 }}
             >
-              {states.map((s: string, i: number) => {
+              {states.map((s: string) => {
                 return (
                   <Area
                     key={s}
