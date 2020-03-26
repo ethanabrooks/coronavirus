@@ -1,7 +1,7 @@
 import React from "react";
 import "./App.css";
 import "react-vis/dist/style.css";
-import { XAxis, AreaChart, Area, YAxis, Tooltip } from "recharts";
+import { AxisDomain, XAxis, AreaChart, Area, YAxis, Tooltip } from "recharts";
 import { Map, List, Collection, Set } from "immutable";
 
 type Entry = {
@@ -11,8 +11,8 @@ type Entry = {
 };
 
 type RefArea = {
-  left: number | null;
-  right: number | null;
+  left: number | undefined;
+  right: number | undefined;
 };
 
 type State =
@@ -24,7 +24,7 @@ type State =
       excluded: Set<string>;
       highlighted: null | string;
       window_dimensions: { innerWidth: number; innerHeight: number };
-      refArea: null | RefArea;
+      refArea: RefArea;
     };
 
 const highlight_color = "#ff0079";
@@ -42,7 +42,7 @@ const App: React.FC<{}> = () => {
           highlighted: state.highlighted,
           excluded: state.excluded,
           window_dimensions: window,
-          refArea: null
+          refArea: { left: undefined, right: undefined }
         });
       }
     };
@@ -63,7 +63,7 @@ const App: React.FC<{}> = () => {
             excluded: Set(),
             highlighted: null,
             window_dimensions: window,
-            refArea: null
+            refArea: { left: undefined, right: undefined }
           }),
         error => setState({ type: "error", error })
       );
@@ -150,12 +150,12 @@ const App: React.FC<{}> = () => {
                   excluded: state.excluded,
                   window_dimensions: window,
                   refArea: {
-                    left: e.activeLabel,
-                    right: state.refArea ? state.refArea.right : null
+                    left: e.activeTooltipIndex,
+                    right: state.refArea.right
                   }
                 })
               }
-              onMouseMove={e =>
+              onMouseUp={e =>
                 state.refArea &&
                 setState({
                   type: "loaded",
@@ -165,7 +165,7 @@ const App: React.FC<{}> = () => {
                   window_dimensions: window,
                   refArea: {
                     left: state.refArea.left,
-                    right: e.activeLabel
+                    right: e.activeTooltipIndex
                   }
                 })
               }
