@@ -222,6 +222,15 @@ const App: React.FC<{}> = () => {
                     });
                   }
                 }
+                return setState({
+                  type: "loaded",
+                  data: state.data,
+                  highlighted: state.highlighted,
+                  excluded: state.excluded,
+                  window_dimensions: window,
+                  selecting: null,
+                  selected: null
+                });
               }}
             >
               {states.toArray().map((s: string) => {
@@ -273,7 +282,7 @@ const App: React.FC<{}> = () => {
               <YAxis orientation="right" />
               <Tooltip
                 isAnimationActive={false}
-                offset={-200}
+                offset={-300}
                 allowEscapeViewBox={{ x: true }}
               />
               {referenceArea()}
