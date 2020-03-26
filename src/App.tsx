@@ -17,8 +17,6 @@ type Entry = {
   dateChecked: Date;
 };
 
-type Selection = { label: string; index: number };
-
 type State =
   | { type: "loading" }
   | { type: "error"; error: any }
@@ -28,8 +26,8 @@ type State =
       excluded: Set<string>;
       highlighted: null | string;
       window_dimensions: { innerWidth: number; innerHeight: number };
-      selecting: null | [Selection, Selection];
-      selected: null | [Selection, Selection];
+      selecting: null | [number, number];
+      selected: null | [number, number];
     };
 
 const highlight_color = "#ff0079";
@@ -115,8 +113,7 @@ const App: React.FC<{}> = () => {
         .remove("date")
         .sortBy((v, k) => -v)
         .keySeq()
-        .filterNot(s => state.excluded.includes(s))
-        .toArray();
+        .filterNot(s => state.excluded.includes(s));
 
       const getStroke = (s: String) => {
         if (state.highlighted === s) {
@@ -144,34 +141,60 @@ const App: React.FC<{}> = () => {
       const chart_data = () => {
         if (state.selected) {
           const [left, right] = state.selected;
-          return data.slice(left.index, right.index);
+          return data.slice(left, right);
         }
         return data;
       };
+      const referenceArea = () => {
+        if (state.selecting) {
+          const [left, right] = state.selecting.map(i => data.get(i));
+          if (left && right) {
+            const left_date = left.get("date");
+            const right_date = right.get("date");
+            if (left_date && right_date) {
+              return (
+                <ReferenceArea
+                  x1={left_date}
+                  x2={right_date}
+                  strokeOpacity={0.3}
+                />
+              );
+            }
+          }
+        }
+      };
       return (
         <div>
+          <div className="title">
+            <h1>Coronavirus Cases</h1>
+          </div>
+          <div className="instructions">
+            <p>
+              Click to remove lines from graphic and resize.{" "}
+              {state.excluded.isEmpty()
+                ? ""
+                : "Click on state names to add back to chart."}
+            </p>
+          </div>
           <div className="chart">
             <AreaChart
               width={width}
-              height={height}
+              height={height - 100}
               data={chart_data().toJS()}
               margin={{ top: 10, right: 10, bottom: 10, left: 10 }}
-              onMouseDown={e =>
+              onMouseDown={e => {
                 setState({
                   type: "loaded",
                   data: state.data,
                   highlighted: state.highlighted,
                   excluded: state.excluded,
                   window_dimensions: window,
-                  selecting: [
-                    { label: e.activeLabel, index: e.activeTooltipIndex },
-                    { label: e.activeLabel, index: e.activeTooltipIndex }
-                  ],
+                  selecting: [e.activeTooltipIndex, e.activeTooltipIndex],
                   selected: null
-                })
-              }
-              onMouseUp={e => {
-                if (state.selecting) {
+                });
+              }}
+              onMouseMove={e => {
+                if (state.selecting && e) {
                   const [left, right] = state.selecting;
                   return setState({
                     type: "loaded",
@@ -179,19 +202,29 @@ const App: React.FC<{}> = () => {
                     highlighted: state.highlighted,
                     excluded: state.excluded,
                     window_dimensions: window,
-                    selecting: null,
-                    selected: [
-                      left,
-                      {
-                        label: e.activeLabel,
-                        index: left.index + e.activeTooltipIndex
-                      }
-                    ]
+                    selecting: [left, e.activeTooltipIndex],
+                    selected: null
                   });
                 }
               }}
+              onMouseUp={e => {
+                if (state.selecting && e) {
+                  const [left, right] = state.selecting;
+                  if (left < right) {
+                    return setState({
+                      type: "loaded",
+                      data: state.data,
+                      highlighted: state.highlighted,
+                      excluded: state.excluded,
+                      window_dimensions: window,
+                      selecting: null,
+                      selected: state.selecting
+                    });
+                  }
+                }
+              }}
             >
-              {states.map((s: string) => {
+              {states.toArray().map((s: string) => {
                 return (
                   <Area
                     key={s}
@@ -199,7 +232,7 @@ const App: React.FC<{}> = () => {
                     dataKey={s}
                     stroke={getStroke(s)}
                     opacity={getOpacity(s)}
-                    isAnimationActive={false}
+                    animationDuration={300}
                     onMouseOver={d => {
                       setState({
                         type: "loaded",
@@ -226,12 +259,13 @@ const App: React.FC<{}> = () => {
                 );
               })}
               <XAxis
-                dataKey={e => {
+                dataKey="date"
+                tickFormatter={d => {
                   const [
                     { value: mo },
                     { value: da },
                     { value: ye }
-                  ] = dtf.formatToParts(new Date(e.date));
+                  ] = dtf.formatToParts(new Date(d));
                   return `${mo} ${da} ${ye}`;
                 }}
               />
@@ -242,41 +276,29 @@ const App: React.FC<{}> = () => {
                 offset={-200}
                 allowEscapeViewBox={{ x: true }}
               />
+              {referenceArea()}
             </AreaChart>
           </div>
-          <div>
-            <div className="title">
-              <h1>Coronavirus Cases</h1>
-            </div>
-            <div className="instructions">
-              <p>
-                Click to remove lines from graphic and resize.{" "}
-                {state.excluded.isEmpty()
-                  ? ""
-                  : "Click on state names to add back to chart."}
-              </p>
-            </div>
-            <div className="excluded">
-              {state.excluded.map((s: string) => (
-                <h2
-                  key={s}
-                  className="hover-red"
-                  onClick={d => {
-                    setState({
-                      type: "loaded",
-                      data: state.data,
-                      highlighted: state.highlighted,
-                      excluded: state.excluded.remove(s),
-                      window_dimensions: window,
-                      selecting: state.selecting,
-                      selected: state.selected
-                    });
-                  }}
-                >
-                  {s}
-                </h2>
-              ))}
-            </div>
+          <div className="excluded">
+            {state.excluded.map((s: string) => (
+              <h2
+                key={s}
+                className="hover-red"
+                onClick={d => {
+                  setState({
+                    type: "loaded",
+                    data: state.data,
+                    highlighted: state.highlighted,
+                    excluded: state.excluded.remove(s),
+                    window_dimensions: window,
+                    selecting: state.selecting,
+                    selected: state.selected
+                  });
+                }}
+              >
+                {s}
+              </h2>
+            ))}
           </div>
         </div>
       );
