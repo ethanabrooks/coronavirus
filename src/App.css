@@ -38,6 +38,7 @@
 }
 .chart {
   float: left;
+  user-select: none;
 }
 
 .title {
