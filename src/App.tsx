@@ -188,7 +188,7 @@ const App: React.FC<{}> = () => {
             <p>
               {state.excluded.isEmpty()
                 ? ""
-                : "Click on state names to add back to chart."}
+                : "Click on state names to add this state and all those with fewer cases back to chart."}
             </p>
           </div>
           <div className="source">
@@ -257,6 +257,12 @@ const App: React.FC<{}> = () => {
                           highlighted: d.dataKey,
                           mouseOverMessage: `Click to remove all states with more cases (currently) than ${d.dataKey} from the graph.`,
                           excluded: state.excluded,
+                        });
+                      }}
+                      onMouseLeave={(d) => {
+                        setState({
+                          ...state,
+                          mouseOverMessage: "",
                         });
                       }}
                       onClick={(d) => {
