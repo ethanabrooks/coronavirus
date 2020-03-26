@@ -10,9 +10,9 @@ type Entry = {
   dateChecked: Date;
 };
 
-type RefArea = {
-  left: number | undefined;
-  right: number | undefined;
+type XArea = {
+  left: number;
+  right: number;
 };
 
 type State =
@@ -24,7 +24,8 @@ type State =
       excluded: Set<string>;
       highlighted: null | string;
       window_dimensions: { innerWidth: number; innerHeight: number };
-      refArea: RefArea;
+      refArea: null | XArea;
+      chartArea: null | XArea;
     };
 
 const highlight_color = "#ff0079";
@@ -42,7 +43,8 @@ const App: React.FC<{}> = () => {
           highlighted: state.highlighted,
           excluded: state.excluded,
           window_dimensions: window,
-          refArea: { left: undefined, right: undefined }
+          refArea: null,
+          chartArea: null
         });
       }
     };
@@ -63,7 +65,8 @@ const App: React.FC<{}> = () => {
             excluded: Set(),
             highlighted: null,
             window_dimensions: window,
-            refArea: { left: undefined, right: undefined }
+            refArea: null,
+            chartArea: null
           }),
         error => setState({ type: "error", error })
       );
@@ -135,10 +138,9 @@ const App: React.FC<{}> = () => {
       }: { innerWidth: number; innerHeight: number } = window;
 
       console.log(state.refArea);
-      const chart_data =
-        state.refArea.left && state.refArea.right
-          ? data.slice(state.refArea.left, state.refArea.right)
-          : data;
+      const chart_data = state.chartArea
+        ? data.slice(state.chartArea.left, state.chartArea.right)
+        : data;
       return (
         <div>
           <div className="chart">
@@ -156,8 +158,9 @@ const App: React.FC<{}> = () => {
                   window_dimensions: window,
                   refArea: {
                     left: e.activeTooltipIndex,
-                    right: state.refArea.right
-                  }
+                    right: e.activeTooltipIndex
+                  },
+                  chartArea: null
                 })
               }
               onMouseUp={e =>
@@ -171,7 +174,8 @@ const App: React.FC<{}> = () => {
                   refArea: {
                     left: state.refArea.left,
                     right: state.refArea.left + e.activeTooltipIndex
-                  }
+                  },
+                  chartArea: null
                 })
               }
             >
@@ -191,7 +195,8 @@ const App: React.FC<{}> = () => {
                         highlighted: d.dataKey,
                         excluded: state.excluded,
                         window_dimensions: window,
-                        refArea: state.refArea
+                        refArea: state.refArea,
+                        chartArea: null
                       });
                     }}
                     onClick={d => {
@@ -201,7 +206,8 @@ const App: React.FC<{}> = () => {
                         highlighted: state.highlighted,
                         excluded: state.excluded.add(d.dataKey),
                         window_dimensions: window,
-                        refArea: state.refArea
+                        refArea: state.refArea,
+                        chartArea: null
                       });
                     }}
                   />
@@ -250,7 +256,8 @@ const App: React.FC<{}> = () => {
                       highlighted: state.highlighted,
                       excluded: state.excluded.remove(s),
                       window_dimensions: window,
-                      refArea: state.refArea
+                      refArea: state.refArea,
+                      chartArea: null
                     });
                   }}
                 >
