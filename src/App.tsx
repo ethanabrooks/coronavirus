@@ -1,20 +1,15 @@
-/// <reference path="../vendor/react-vis.d.ts"/>
 import React from "react";
 import "./App.css";
 import "../node_modules/react-vis/dist/style.css";
-//import * as admin from "firebase-admin";
-
 import {
-  XYPlot,
   XAxis,
+  LineChart,
+  Line,
+  CartesianGrid,
   YAxis,
-  VerticalGridLines,
-  HorizontalGridLines,
-  LineSeries,
-  LineSeriesPoint
-} from "react-vis";
-
-import { List } from "immutable";
+  Tooltip
+} from "recharts";
+import { Set, Map, List, Collection } from "immutable";
 
 type Entry = {
   state: string;
@@ -47,50 +42,92 @@ const App: React.FC<{}> = () => {
     case "error":
       return <div>Error: {state.error.message}</div>;
     case "loaded":
-      const data: [string, LineSeriesPoint[]][] = List(state.data)
-        .groupBy((e: Entry) => e.state)
-        .map(entries => entries.valueSeq().toList())
-        .map((entries: List<Entry>) =>
+      const states: Set<string> = Set(state.data.map((e: Entry) => e.state));
+      const dtf = new Intl.DateTimeFormat("en", {
+        year: "numeric",
+        month: "short",
+        day: "2-digit"
+      });
+      const dat = List(state.data)
+        .groupBy((e: Entry): Date => e.dateChecked)
+        .map((entries: Collection<number, Entry>) =>
           entries
-            .map((e: Entry) => ({
-              x: new Date(e.dateChecked).valueOf(),
-              y: e.positive
-            }))
-            .sort((p1: LineSeriesPoint, p2: LineSeriesPoint) => p1.x - p2.x)
-            .toArray()
+            .groupBy((e: Entry): string => e.state)
+            .map((entries: Collection<number, Entry>): Entry => entries.first())
+            .map((e: Entry) => e.positive)
         )
-        .toArray();
+        .entrySeq()
+        .map(([date, cases]) =>
+          Map(cases).set("name", new Date(date).valueOf())
+        );
 
-      //<VerticalGridLines />
+      const data = [
+        {
+          name: 1585166400000,
+          uv: 4000,
+          pv: 2400,
+          amt: 2400
+        },
+        {
+          name: "Page B",
+          uv: 3000,
+          pv: 1398,
+          amt: 2210
+        },
+        {
+          name: "Page C",
+          uv: 2000,
+          pv: 9800,
+          amt: 2290
+        },
+        {
+          name: "Page D",
+          uv: 2780,
+          pv: 3908,
+          amt: 2000
+        },
+        {
+          name: "Page E",
+          uv: 1890,
+          pv: 4800,
+          amt: 2181
+        },
+        {
+          name: "Page F",
+          uv: 2390,
+          pv: 3800,
+          amt: 2500
+        },
+        {
+          name: "Page G",
+          uv: 3490,
+          pv: 4300,
+          amt: 2100
+        }
+      ];
+
+      console.log("data start");
+      console.log(dat.toJS());
+      console.log("data end");
+      console.log(data);
       return (
         <div>
-          <XYPlot xType="ordinal" width={1300} height={500}>
-            <HorizontalGridLines />
-            <XAxis
-              tickFormat={d => {
-                const dtf = new Intl.DateTimeFormat("en", {
-                  year: "numeric",
-                  month: "short",
-                  day: "2-digit"
-                });
-                const [
-                  { value: mo },
-                  ,
-                  { value: da },
-                  ,
-                  { value: ye }
-                ] = dtf.formatToParts(d);
-
-                return [mo, da, ye].toString();
-              }}
-              height={200}
-              tickLabelAngle={-20}
-            />
+          <h1> hello</h1>
+          <LineChart
+            width={600}
+            height={300}
+            data={dat.toJS()}
+            margin={{ top: 5, right: 20, bottom: 5, left: 0 }}
+          >
+            {states.toArray().map((s: string) => {
+              return <Line type="monotone" dataKey={s} stroke="#8884d8" />;
+            })}
+            <XAxis dataKey="name" />
+            <CartesianGrid stroke="#ccc" strokeDasharray="5 5" />
+            <XAxis dataKey="name" />
             <YAxis />
-            {data.map(([className, points]: [string, LineSeriesPoint[]]) => (
-              <LineSeries className={className} data={points} />
-            ))}
-          </XYPlot>
+            <Tooltip />
+          </LineChart>
         </div>
       );
   }
