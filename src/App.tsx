@@ -26,7 +26,7 @@ type State =
   | {
       type: "loaded";
       data: Data;
-    states: Seq.Indexed<string>
+      states: Seq.Indexed<string>;
       excluded: Set<string>;
       highlighted: null | string;
       window_dimensions: { innerWidth: number; innerHeight: number };
@@ -82,15 +82,15 @@ const App: React.FC<{}> = () => {
 
             .sortBy((m: Map<string, number>) => m.get("date"));
 
-      const most_recent_data: OrderedMap<string, number> = data.last();
-      if (most_recent_data == null) {
-        return <div>Error: "Empty data"</div>;
-      }
+          const most_recent_data: OrderedMap<string, number> = data.last();
+          if (most_recent_data == null) {
+            return <div>Error: "Empty data"</div>;
+          }
 
-      const states: Seq.Indexed<string> = most_recent_data
-        .remove("date")
-        .sortBy((v, k) => -v)
-        .keySeq();
+          const states: Seq.Indexed<string> = most_recent_data
+            .remove("date")
+            .sortBy((v, k) => -v)
+            .keySeq();
           setState({
             type: "loaded",
             data,
@@ -113,9 +113,8 @@ const App: React.FC<{}> = () => {
       return <div>Error: {state.error.message}</div>;
     case "loaded":
       const dtf = new Intl.DateTimeFormat("en", {
-        year: "numeric",
         month: "short",
-        day: "2-digit"
+        day: "numeric"
       });
 
       const getStroke = (s: String) => {
@@ -143,7 +142,10 @@ const App: React.FC<{}> = () => {
 
       const chart_data = () => {
         if (state.selected) {
-          return state.data.slice(state.selected.left, state.selected.right + 1);
+          return state.data.slice(
+            state.selected.left,
+            state.selected.right + 1
+          );
         }
         return state.data;
       };
@@ -152,14 +154,14 @@ const App: React.FC<{}> = () => {
           return null;
         }
 
-        const left = state.data.get(state.selecting.left)?.get("date");
-        const right = state.data.get(state.selecting.right)?.get("date");
+        const left_date = state.data.get(state.selecting.left);
+        const right_date = state.data.get(state.selecting.right);
+        const left = left_date ? left_date.get("date") : null;
+        const right = right_date ? right_date.get("date") : null;
 
-        return left && right ? <ReferenceArea
-          x1={left}
-          x2={right}
-          strokeOpacity={0.3}
-        /> : null;
+        return left && right ? (
+          <ReferenceArea x1={left} x2={right} strokeOpacity={0.3} />
+        ) : null;
       };
       return (
         <div>
@@ -190,7 +192,7 @@ const App: React.FC<{}> = () => {
                     selecting: {
                       left: e.activeTooltipIndex,
                       right: e.activeTooltipIndex
-                    },
+                    }
                   });
                 }
               }}
@@ -222,41 +224,37 @@ const App: React.FC<{}> = () => {
                 });
               }}
             >
-              {state.states.filterNot(s => state.excluded.includes(s)).toArray().map((s: string) => {
-                return (
-                  <Area
-                    key={s}
-                    type="monotone"
-                    dataKey={s}
-                    stroke={getStroke(s)}
-                    opacity={getOpacity(s)}
-                  isAnimationActive={false}
-                    onMouseOver={d => {
-                      setState({
-                        ...state,
-                        highlighted: d.dataKey,
-                        excluded: state.excluded
-                      });
-                    }}
-                    onClick={d => {
-                      setState({
-                        ...state,
-                        excluded: state.excluded.add(d.dataKey)
-                      });
-                    }}
-                  />
-                );
-              })}
+              {state.states
+                .filterNot(s => state.excluded.includes(s))
+                .toArray()
+                .map((s: string) => {
+                  return (
+                    <Area
+                      key={s}
+                      type="monotone"
+                      dataKey={s}
+                      stroke={getStroke(s)}
+                      opacity={getOpacity(s)}
+                      isAnimationActive={false}
+                      onMouseOver={d => {
+                        setState({
+                          ...state,
+                          highlighted: d.dataKey,
+                          excluded: state.excluded
+                        });
+                      }}
+                      onClick={d => {
+                        setState({
+                          ...state,
+                          excluded: state.excluded.add(d.dataKey)
+                        });
+                      }}
+                    />
+                  );
+                })}
               <XAxis
                 dataKey="date"
-                tickFormatter={d => {
-                  const [
-                    { value: mo },
-                    { value: da },
-                    { value: ye }
-                  ] = dtf.formatToParts(new Date(d));
-                  return `${mo} ${da} ${ye}`;
-                }}
+                tickFormatter={d => dtf.format(new Date(d))}
               />
               <XAxis dataKey="name" />
               <YAxis orientation="right" />
@@ -264,6 +262,7 @@ const App: React.FC<{}> = () => {
                 isAnimationActive={false}
                 offset={-300}
                 allowEscapeViewBox={{ x: true }}
+                labelFormatter={label => dtf.format(new Date(label))}
               />
               {referenceArea()}
             </AreaChart>
