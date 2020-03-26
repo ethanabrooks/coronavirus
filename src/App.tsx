@@ -142,23 +142,18 @@ const App: React.FC<{}> = () => {
         return data;
       };
       const referenceArea = () => {
-        if (state.selecting) {
-          const left = data.get(state.selecting.left);
-          const right = data.get(state.selecting.right);
-          if (left && right) {
-            const left_date = left.get("date");
-            const right_date = right.get("date");
-            if (left_date && right_date) {
-              return (
-                <ReferenceArea
-                  x1={left_date}
-                  x2={right_date}
-                  strokeOpacity={0.3}
-                />
-              );
-            }
-          }
+        if (state.selecting == null) {
+          return null;
         }
+
+        const left = data.get(state.selecting.left)?.get("date");
+        const right = data.get(state.selecting.right)?.get("date");
+
+        return left && right ? <ReferenceArea
+          x1={left}
+          x2={right}
+          strokeOpacity={0.3}
+        /> : null;
       };
       return (
         <div>
