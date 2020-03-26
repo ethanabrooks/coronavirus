@@ -143,7 +143,7 @@ const App: React.FC<{}> = () => {
 
       const chart_data = () => {
         if (state.selected) {
-          return state.data.slice(state.selected.left, state.selected.right);
+          return state.data.slice(state.selected.left, state.selected.right + 1);
         }
         return state.data;
       };
@@ -191,7 +191,6 @@ const App: React.FC<{}> = () => {
                       left: e.activeTooltipIndex,
                       right: e.activeTooltipIndex
                     },
-                    selected: null
                   });
                 }
               }}
@@ -231,7 +230,7 @@ const App: React.FC<{}> = () => {
                     dataKey={s}
                     stroke={getStroke(s)}
                     opacity={getOpacity(s)}
-                    animationDuration={300}
+                  isAnimationActive={false}
                     onMouseOver={d => {
                       setState({
                         ...state,
