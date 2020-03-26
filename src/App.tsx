@@ -32,6 +32,7 @@ type State =
       window_dimensions: { innerWidth: number; innerHeight: number };
       selecting: null | XSelection;
       selected: null | XSelection;
+      mouseOverMessage: string;
     };
 
 const highlight_color = "#ff0079";
@@ -100,6 +101,7 @@ const App: React.FC<{}> = () => {
             window_dimensions: window,
             selecting: null,
             selected: null,
+            mouseOverMessage: "",
           });
         },
         (error) => setState({ type: "error", error })
@@ -168,10 +170,11 @@ const App: React.FC<{}> = () => {
           </div>
           <div className="instructions">
             <p>
-              Click on the graph to remove lines and resize.{" "}
+              Mouse over the graph to see which state each line/area represents.
+              {` ${state.mouseOverMessage}`}
               {state.excluded.isEmpty()
                 ? ""
-                : "Click on state names to add back to chart."}
+                : " Click on state names to add back to chart."}
             </p>
           </div>
           <div className="source">
@@ -238,6 +241,7 @@ const App: React.FC<{}> = () => {
                         setState({
                           ...state,
                           highlighted: d.dataKey,
+                          mouseOverMessage: `Click to remove ${d.dataKey} from the graph.`,
                           excluded: state.excluded,
                         });
                       }}
