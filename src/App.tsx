@@ -9,7 +9,7 @@ import {
   YAxis,
   Tooltip,
 } from "recharts";
-import { Seq, OrderedMap, Map, List, Collection, Set } from "immutable";
+import { OrderedSet, OrderedMap, Map, List, Collection, Set } from "immutable";
 
 type Entry = {
   state: string;
@@ -18,15 +18,16 @@ type Entry = {
 };
 
 type XSelection = { left: number; right: number };
-type Data = List<OrderedMap<string, number>>;
+type Data = OrderedMap<string, number>;
 
 type State =
   | { type: "loading" }
   | { type: "error"; error: any }
   | {
       type: "loaded";
-      data: Data;
-      states: Seq.Indexed<string>;
+      data: List<Data>;
+      latest_data: Data;
+      states: OrderedSet<string>;
       excluded: Set<string>;
       highlighted: null | string;
       window_dimensions: { innerWidth: number; innerHeight: number };
@@ -83,18 +84,27 @@ const App: React.FC<{}> = () => {
 
             .sortBy((m: Map<string, number>) => m.get("date"));
 
-          const most_recent_data: OrderedMap<string, number> = data.last();
-          if (most_recent_data == null) {
+          const first_data: OrderedMap<string, number> = data.first();
+          if (first_data == null) {
             return <div>Error: "Empty data"</div>;
           }
-
-          const states: Seq.Indexed<string> = most_recent_data
+          const states: OrderedSet<string> = first_data
             .remove("date")
             .sortBy((v, k) => -v)
-            .keySeq();
+            .keySeq()
+            .toOrderedSet();
+
+          const latest_data: OrderedSet<[string, number]> = OrderedMap(
+            states.map((s) => {
+              const last = data.findLast((d) => d.has(s));
+              return [s, last ? last.get(s, 0) : 0];
+            })
+          );
+
           setState({
             type: "loaded",
             data,
+            latest_data,
             states,
             excluded: Set(),
             highlighted: null,
@@ -171,10 +181,12 @@ const App: React.FC<{}> = () => {
           <div className="instructions">
             <p>
               Mouse over the graph to see which state each line/area represents.
-              {` ${state.mouseOverMessage}`}
+            </p>
+            <p>{`${state.mouseOverMessage}`}</p>
+            <p>
               {state.excluded.isEmpty()
                 ? ""
-                : " Click on state names to add back to chart."}
+                : "Click on state names to add back to chart."}
             </p>
           </div>
           <div className="source">
@@ -241,14 +253,24 @@ const App: React.FC<{}> = () => {
                         setState({
                           ...state,
                           highlighted: d.dataKey,
-                          mouseOverMessage: `Click to remove ${d.dataKey} from the graph.`,
+                          mouseOverMessage: `Click to remove all states with more cases (currently) than ${d.dataKey} from the graph.`,
                           excluded: state.excluded,
                         });
                       }}
                       onClick={(d) => {
+                        const latest_data: OrderedMap<
+                          string,
+                          number
+                        > = state.data.last();
+                        const this_states_cases = latest_data.get(d.dataKey, 0);
                         setState({
                           ...state,
-                          excluded: state.excluded.add(d.dataKey),
+                          excluded: state.states
+                            .filter(
+                              (s) => latest_data.get(s, 0) > this_states_cases
+                            )
+                            .toSet()
+                            .union(state.excluded),
                         });
                       }}
                     />
