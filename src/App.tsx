@@ -18,13 +18,14 @@ type Entry = {
 };
 
 type XSelection = { left: number; right: number };
+type Data = List<OrderedMap<string, number>>;
 
 type State =
   | { type: "loading" }
   | { type: "error"; error: any }
   | {
       type: "loaded";
-      data: Entry[];
+      data: Data;
       excluded: Set<string>;
       highlighted: null | string;
       window_dimensions: { innerWidth: number; innerHeight: number };
@@ -53,11 +54,32 @@ const App: React.FC<{}> = () => {
     };
   });
 
-  React.useEffect(() => {
+  React.useMemo(() => {
     fetch("https://covidtracking.com/api/states/daily")
       .then(res => res.json())
       .then(
-        data =>
+        (raw_data: Entry[]) => {
+          const nested_data: Collection.Keyed<
+            Date,
+            Collection.Keyed<string, number>
+          > = List(raw_data)
+            .groupBy((e: Entry): Date => e.dateChecked)
+            .map((entries: Collection<number, Entry>) =>
+              entries
+                .groupBy((e: Entry): string => e.state)
+                .map(
+                  (entries: Collection<number, Entry>): Entry => entries.first()
+                )
+                .map((e: Entry) => e.positive)
+            );
+          const data = nested_data
+            .entrySeq()
+            .map(([date, cases]) =>
+              OrderedMap(cases).set("date", new Date(date).valueOf())
+            )
+            .toList()
+
+            .sortBy((m: Map<string, number>) => m.get("date"));
           setState({
             type: "loaded",
             data,
@@ -66,7 +88,8 @@ const App: React.FC<{}> = () => {
             window_dimensions: window,
             selecting: null,
             selected: null
-          }),
+          });
+        },
         error => setState({ type: "error", error })
       );
   }, []);
@@ -82,26 +105,7 @@ const App: React.FC<{}> = () => {
         month: "short",
         day: "2-digit"
       });
-      const nested_data: Collection.Keyed<
-        Date,
-        Collection.Keyed<string, number>
-      > = List(state.data)
-        .groupBy((e: Entry): Date => e.dateChecked)
-        .map((entries: Collection<number, Entry>) =>
-          entries
-            .groupBy((e: Entry): string => e.state)
-            .map((entries: Collection<number, Entry>): Entry => entries.first())
-            .map((e: Entry) => e.positive)
-        );
-      const data = nested_data
-        .entrySeq()
-        .map(([date, cases]) =>
-          OrderedMap(cases).set("date", new Date(date).valueOf())
-        )
-        .toList()
-
-        .sortBy((m: Map<string, number>) => m.get("date"));
-      const most_recent_data: OrderedMap<string, number> = data.last();
+      const most_recent_data: OrderedMap<string, number> = state.data.last();
       if (most_recent_data == null) {
         return <div>Error: "Empty data"</div>;
       }
@@ -137,17 +141,17 @@ const App: React.FC<{}> = () => {
 
       const chart_data = () => {
         if (state.selected) {
-          return data.slice(state.selected.left, state.selected.right);
+          return state.data.slice(state.selected.left, state.selected.right);
         }
-        return data;
+        return state.data;
       };
       const referenceArea = () => {
         if (state.selecting == null) {
           return null;
         }
 
-        const left = data.get(state.selecting.left)?.get("date");
-        const right = data.get(state.selecting.right)?.get("date");
+        const left = state.data.get(state.selecting.left)?.get("date");
+        const right = state.data.get(state.selecting.right)?.get("date");
 
         return left && right ? <ReferenceArea
           x1={left}
@@ -174,7 +178,7 @@ const App: React.FC<{}> = () => {
           <div className="chart">
             <AreaChart
               width={width}
-              height={height}
+              height={height - 10}
               data={chart_data().toJS()}
               margin={{ top: 10, right: 10, bottom: 10, left: 10 }}
               onMouseDown={e => {
