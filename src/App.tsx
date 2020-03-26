@@ -189,8 +189,7 @@ const App: React.FC<{}> = () => {
             </div>
             <div className="instructions">
               <p>
-                Mouse over chart to view data points. Click to remove lines from
-                graphic and resize.{" "}
+                Click to remove lines from graphic and resize.{" "}
                 {state.excluded.isEmpty()
                   ? ""
                   : "Click on state names to add back to chart."}
