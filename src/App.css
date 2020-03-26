@@ -41,5 +41,7 @@
 }
 
 .excluded {
-  float: left
+    position: absolute;
+  top: 8px;
+  left: 16px;
 }
