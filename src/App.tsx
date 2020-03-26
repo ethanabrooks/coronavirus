@@ -1,7 +1,14 @@
 import React from "react";
 import "./App.css";
 import "react-vis/dist/style.css";
-import { XAxis, AreaChart, Area, YAxis, Tooltip } from "recharts";
+import {
+  ReferenceArea,
+  XAxis,
+  AreaChart,
+  Area,
+  YAxis,
+  Tooltip
+} from "recharts";
 import { OrderedMap, Map, List, Collection, Set } from "immutable";
 
 type Entry = {
@@ -10,10 +17,7 @@ type Entry = {
   dateChecked: Date;
 };
 
-type XArea = {
-  left: number;
-  right: number;
-};
+type Selection = { label: string; index: number };
 
 type State =
   | { type: "loading" }
@@ -24,8 +28,8 @@ type State =
       excluded: Set<string>;
       highlighted: null | string;
       window_dimensions: { innerWidth: number; innerHeight: number };
-      refArea: null | XArea;
-      chartArea: null | XArea;
+      selecting: null | [Selection, Selection];
+      selected: null | [Selection, Selection];
     };
 
 const highlight_color = "#ff0079";
@@ -43,8 +47,8 @@ const App: React.FC<{}> = () => {
           highlighted: state.highlighted,
           excluded: state.excluded,
           window_dimensions: window,
-          refArea: null,
-          chartArea: null
+          selecting: null,
+          selected: null
         });
       }
     };
@@ -65,8 +69,8 @@ const App: React.FC<{}> = () => {
             excluded: Set(),
             highlighted: null,
             window_dimensions: window,
-            refArea: null,
-            chartArea: null
+            selecting: null,
+            selected: null
           }),
         error => setState({ type: "error", error })
       );
@@ -137,17 +141,20 @@ const App: React.FC<{}> = () => {
         innerHeight: height
       }: { innerWidth: number; innerHeight: number } = window;
 
-      console.log(state.refArea);
-      const chart_data = state.chartArea
-        ? data.slice(state.chartArea.left, state.chartArea.right)
-        : data;
+      const chart_data = () => {
+        if (state.selected) {
+          const [left, right] = state.selected;
+          return data.slice(left.index, right.index);
+        }
+        return data;
+      };
       return (
         <div>
           <div className="chart">
             <AreaChart
               width={width}
               height={height}
-              data={chart_data.toJS()}
+              data={chart_data().toJS()}
               margin={{ top: 10, right: 10, bottom: 10, left: 10 }}
               onMouseDown={e =>
                 setState({
@@ -156,26 +163,23 @@ const App: React.FC<{}> = () => {
                   highlighted: state.highlighted,
                   excluded: state.excluded,
                   window_dimensions: window,
-                  refArea: {
-                    left: e.activeTooltipIndex,
-                    right: e.activeTooltipIndex
-                  },
-                  chartArea: null
+                  selecting: [
+                    { label: e.activeLabel, index: e.activeTooltipIndex },
+                    { label: e.activeLabel, index: e.activeTooltipIndex }
+                  ],
+                  selected: null
                 })
               }
               onMouseUp={e =>
-                state.refArea &&
+                state.selecting &&
                 setState({
                   type: "loaded",
                   data: state.data,
                   highlighted: state.highlighted,
                   excluded: state.excluded,
                   window_dimensions: window,
-                  refArea: {
-                    left: state.refArea.left,
-                    right: state.refArea.left + e.activeTooltipIndex
-                  },
-                  chartArea: null
+                  selecting: null,
+                  selected: null
                 })
               }
             >
@@ -195,8 +199,8 @@ const App: React.FC<{}> = () => {
                         highlighted: d.dataKey,
                         excluded: state.excluded,
                         window_dimensions: window,
-                        refArea: state.refArea,
-                        chartArea: null
+                        selecting: state.selecting,
+                        selected: null
                       });
                     }}
                     onClick={d => {
@@ -206,8 +210,8 @@ const App: React.FC<{}> = () => {
                         highlighted: state.highlighted,
                         excluded: state.excluded.add(d.dataKey),
                         window_dimensions: window,
-                        refArea: state.refArea,
-                        chartArea: null
+                        selecting: state.selecting,
+                        selected: null
                       });
                     }}
                   />
@@ -256,8 +260,8 @@ const App: React.FC<{}> = () => {
                       highlighted: state.highlighted,
                       excluded: state.excluded.remove(s),
                       window_dimensions: window,
-                      refArea: state.refArea,
-                      chartArea: null
+                      selecting: state.selecting,
+                      selected: null
                     });
                   }}
                 >
