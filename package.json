@@ -14,6 +14,7 @@
     "gh-pages": "^2.2.0",
     "immutable": "^4.0.0-rc.12",
     "nivo": "^0.31.0",
+    "prettier": "^2.0.2",
     "react": "^16.13.1",
     "react-dom": "^16.13.1",
     "react-scripts": "3.4.1",
