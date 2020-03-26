@@ -17,6 +17,8 @@ type Entry = {
   dateChecked: Date;
 };
 
+type XSelection = { left: number; right: number };
+
 type State =
   | { type: "loading" }
   | { type: "error"; error: any }
@@ -26,8 +28,8 @@ type State =
       excluded: Set<string>;
       highlighted: null | string;
       window_dimensions: { innerWidth: number; innerHeight: number };
-      selecting: null | [number, number];
-      selected: null | [number, number];
+      selecting: null | XSelection;
+      selected: null | XSelection;
     };
 
 const highlight_color = "#ff0079";
@@ -140,14 +142,14 @@ const App: React.FC<{}> = () => {
 
       const chart_data = () => {
         if (state.selected) {
-          const [left, right] = state.selected;
-          return data.slice(left, right);
+          return data.slice(state.selected.left, state.selected.right);
         }
         return data;
       };
       const referenceArea = () => {
         if (state.selecting) {
-          const [left, right] = state.selecting.map(i => data.get(i));
+          const left = data.get(state.selecting.left);
+          const right = data.get(state.selecting.right);
           if (left && right) {
             const left_date = left.get("date");
             const right_date = right.get("date");
@@ -176,6 +178,9 @@ const App: React.FC<{}> = () => {
                 : "Click on state names to add back to chart."}
             </p>
           </div>
+          <div className="source">
+            <p>source: The Covid Tracking Project</p>
+          </div>
           <div className="chart">
             <AreaChart
               width={width}
@@ -189,28 +194,32 @@ const App: React.FC<{}> = () => {
                   highlighted: state.highlighted,
                   excluded: state.excluded,
                   window_dimensions: window,
-                  selecting: [e.activeTooltipIndex, e.activeTooltipIndex],
+                  selecting: {
+                    left: e.activeTooltipIndex,
+                    right: e.activeTooltipIndex
+                  },
                   selected: null
                 });
               }}
               onMouseMove={e => {
                 if (state.selecting && e) {
-                  const [left, right] = state.selecting;
                   return setState({
                     type: "loaded",
                     data: state.data,
                     highlighted: state.highlighted,
                     excluded: state.excluded,
                     window_dimensions: window,
-                    selecting: [left, e.activeTooltipIndex],
+                    selecting: {
+                      left: state.selecting.left,
+                      right: e.activeTooltipIndex
+                    },
                     selected: null
                   });
                 }
               }}
               onMouseUp={e => {
                 if (state.selecting && e) {
-                  const [left, right] = state.selecting;
-                  if (left < right) {
+                  if (state.selecting.left !== state.selecting.right) {
                     return setState({
                       type: "loaded",
                       data: state.data,

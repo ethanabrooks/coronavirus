@@ -53,6 +53,12 @@
   left: 16px;
 }
 
+.source {
+  position: absolute;
+  bottom: -10px;
+  right: 16px;
+}
+
 .excluded {
   position: absolute;
   top: 70px;
