@@ -1,8 +1,8 @@
 import React from "react";
 import "./App.css";
 import "react-vis/dist/style.css";
-import { AxisDomain, XAxis, AreaChart, Area, YAxis, Tooltip } from "recharts";
-import { Map, List, Collection, Set } from "immutable";
+import { XAxis, AreaChart, Area, YAxis, Tooltip } from "recharts";
+import { OrderedMap, Map, List, Collection, Set } from "immutable";
 
 type Entry = {
   state: string;
@@ -91,20 +91,21 @@ const App: React.FC<{}> = () => {
             .map((entries: Collection<number, Entry>): Entry => entries.first())
             .map((e: Entry) => e.positive)
         );
-      const most_recent_data = nested_data.maxBy((_, k) => k);
-      if (most_recent_data == null) {
-        return <div>Error: "Empty data"</div>;
-      }
       const data = nested_data
         .entrySeq()
         .map(([date, cases]) =>
-          Map(cases).set("date", new Date(date).valueOf())
+          OrderedMap(cases).set("date", new Date(date).valueOf())
         )
         .toList()
 
         .sortBy((m: Map<string, number>) => m.get("date"));
+      const most_recent_data: OrderedMap<string, number> = data.last();
+      if (most_recent_data == null) {
+        return <div>Error: "Empty data"</div>;
+      }
 
       const states = most_recent_data
+        .remove("date")
         .sortBy((v, k) => -v)
         .keySeq()
         .filterNot(s => state.excluded.includes(s))
