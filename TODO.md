@@ -1,2 +1,5 @@
 - percentage of population
 - auto-detect state
+- add /PA
+- get rid of the circles
+- zoom by amplitude

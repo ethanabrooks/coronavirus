@@ -1,6 +1,8 @@
 import React from "react";
 import "./App.css";
 import "react-vis/dist/style.css";
+import { Router, Link } from "@reach/router";
+
 import {
   ReferenceArea,
   XAxis,
@@ -189,6 +191,7 @@ const App: React.FC<{}> = () => {
           <div className="instructions">
             <p>
               Mouse over the graph to see which state each line/area represents.
+              Click and drag to zoom.
             </p>
             <p>{`${state.mouseOverMessage}`}</p>
             <p>
@@ -257,6 +260,7 @@ const App: React.FC<{}> = () => {
                       stroke={getStroke(s)}
                       opacity={getOpacity(s)}
                       isAnimationActive={false}
+                      activeDot={{ r: 0 }}
                       onMouseOver={(d) => {
                         setState({
                           ...state,
