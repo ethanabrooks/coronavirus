@@ -263,6 +263,7 @@ const App: React.FC<{}> = () => {
                 offset={-300}
                 allowEscapeViewBox={{ x: true }}
                 labelFormatter={(label) => dtf.format(new Date(label))}
+                itemSorter={(i) => -i.value}
               />
               {referenceArea()}
             </AreaChart>
