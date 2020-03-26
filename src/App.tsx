@@ -154,14 +154,14 @@ const App: React.FC<{}> = () => {
           return null;
         }
 
-        const left_date = state.data.get(state.selecting.left);
-        const right_date = state.data.get(state.selecting.right);
-        const left = left_date ? left_date.get("date") : null;
-        const right = right_date ? right_date.get("date") : null;
+        const left = state.data.get(state.selecting.left)?.get("date");
+        const right = state.data.get(state.selecting.right)?.get("date");
 
-        return left && right ? (
-          <ReferenceArea x1={left} x2={right} strokeOpacity={0.3} />
-        ) : null;
+        return left && right ? <ReferenceArea
+          x1={left}
+          x2={right}
+          strokeOpacity={0.3}
+        /> : null;
       };
       return (
         <div>
