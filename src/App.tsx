@@ -84,21 +84,22 @@ const App: React.FC<{}> = () => {
 
             .sortBy((m: Map<string, number>) => m.get("date"));
 
-          const first_data: OrderedMap<string, number> = data.first();
-          if (first_data == null) {
-            return <div>Error: "Empty data"</div>;
-          }
-          const states: OrderedSet<string> = first_data
-            .remove("date")
-            .sortBy((v, k) => -v)
-            .keySeq()
-            .toOrderedSet();
+          const unsortedStates = nested_data
+            .map((d) => d.keySeq())
+            .valueSeq()
+            .flatten()
+            .toOrderedSet()
+            .remove("date");
 
           const latest_data = OrderedMap(
-            states.map((s) => {
+            unsortedStates.map((s) => {
               const last = data.findLast((d) => d.has(s));
               return [s, last ? last.get(s, 0) : 0];
             })
+          );
+
+          const states: OrderedSet<string> = unsortedStates.sortBy(
+            (v: number, s: string) => -latest_data.get(s, 0)
           );
 
           setState({
