@@ -43,3 +43,7 @@
 .excluded {
   float: left
 }
+
+.hover-red:hover {
+  color: #ff0079;
+}

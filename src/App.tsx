@@ -22,7 +22,6 @@ type State =
 
 const highlight_color = "#ff0079";
 const default_color = "#00b6c6";
-const black = "#000000";
 
 const App: React.FC<{}> = () => {
   const [state, setState] = React.useState<State>({ type: "loading" });
@@ -159,19 +158,8 @@ const App: React.FC<{}> = () => {
           <div className="excluded">
             {state.excluded.map((s: string) => (
               <h1
-                id={s}
-                onMouseEnter={d => {
-                  var el = document.getElementById(s);
-                  if (el !== null) {
-                    el.style.color = highlight_color;
-                  }
-                }}
-                onMouseLeave={d => {
-                  var el = document.getElementById(s);
-                  if (el !== null) {
-                    el.style.color = black;
-                  }
-                }}
+                key={s}
+                className="hover-red"
                 onClick={d => {
                   setState({
                     type: "loaded",
