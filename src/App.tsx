@@ -7,7 +7,7 @@ import {
   AreaChart,
   Area,
   YAxis,
-  Tooltip
+  Tooltip,
 } from "recharts";
 import { Seq, OrderedMap, Map, List, Collection, Set } from "immutable";
 
@@ -45,7 +45,7 @@ const App: React.FC<{}> = () => {
       if (state.type === "loaded") {
         setState({
           ...state,
-          window_dimensions: window
+          window_dimensions: window,
         });
       }
     };
@@ -57,7 +57,7 @@ const App: React.FC<{}> = () => {
 
   React.useEffect(() => {
     fetch("https://covidtracking.com/api/states/daily")
-      .then(res => res.json())
+      .then((res) => res.json())
       .then(
         (raw_data: Entry[]) => {
           const nested_data: Collection.Keyed<
@@ -99,10 +99,10 @@ const App: React.FC<{}> = () => {
             highlighted: null,
             window_dimensions: window,
             selecting: null,
-            selected: null
+            selected: null,
           });
         },
-        error => setState({ type: "error", error })
+        (error) => setState({ type: "error", error })
       );
   }, []);
 
@@ -114,7 +114,7 @@ const App: React.FC<{}> = () => {
     case "loaded":
       const dtf = new Intl.DateTimeFormat("en", {
         month: "short",
-        day: "numeric"
+        day: "numeric",
       });
 
       const getStroke = (s: String) => {
@@ -137,7 +137,7 @@ const App: React.FC<{}> = () => {
       };
       const {
         innerWidth: width,
-        innerHeight: height
+        innerHeight: height,
       }: { innerWidth: number; innerHeight: number } = window;
 
       const chart_data = () => {
@@ -170,7 +170,7 @@ const App: React.FC<{}> = () => {
           </div>
           <div className="instructions">
             <p>
-              Click to remove lines from graphic and resize.{" "}
+              Click on the graph to remove lines and resize.{" "}
               {state.excluded.isEmpty()
                 ? ""
                 : "Click on state names to add back to chart."}
@@ -185,47 +185,47 @@ const App: React.FC<{}> = () => {
               height={height - 10}
               data={chart_data().toJS()}
               margin={{ top: 10, right: 10, bottom: 10, left: 10 }}
-              onMouseDown={e => {
+              onMouseDown={(e) => {
                 if (e) {
                   setState({
                     ...state,
                     selecting: {
                       left: e.activeTooltipIndex,
-                      right: e.activeTooltipIndex
-                    }
+                      right: e.activeTooltipIndex,
+                    },
                   });
                 }
               }}
-              onMouseMove={e => {
+              onMouseMove={(e) => {
                 if (state.selecting && e) {
                   return setState({
                     ...state,
                     selecting: {
                       left: state.selecting.left,
-                      right: e.activeTooltipIndex
-                    }
+                      right: e.activeTooltipIndex,
+                    },
                   });
                 }
               }}
-              onMouseUp={e => {
+              onMouseUp={(e) => {
                 if (state.selecting && e) {
                   if (state.selecting.left !== state.selecting.right) {
                     return setState({
                       ...state,
                       selecting: null,
-                      selected: state.selecting
+                      selected: state.selecting,
                     });
                   }
                 }
                 return setState({
                   ...state,
                   selecting: null,
-                  selected: null
+                  selected: null,
                 });
               }}
             >
               {state.states
-                .filterNot(s => state.excluded.includes(s))
+                .filterNot((s) => state.excluded.includes(s))
                 .toArray()
                 .map((s: string) => {
                   return (
@@ -236,17 +236,17 @@ const App: React.FC<{}> = () => {
                       stroke={getStroke(s)}
                       opacity={getOpacity(s)}
                       isAnimationActive={false}
-                      onMouseOver={d => {
+                      onMouseOver={(d) => {
                         setState({
                           ...state,
                           highlighted: d.dataKey,
-                          excluded: state.excluded
+                          excluded: state.excluded,
                         });
                       }}
-                      onClick={d => {
+                      onClick={(d) => {
                         setState({
                           ...state,
-                          excluded: state.excluded.add(d.dataKey)
+                          excluded: state.excluded.add(d.dataKey),
                         });
                       }}
                     />
@@ -254,7 +254,7 @@ const App: React.FC<{}> = () => {
                 })}
               <XAxis
                 dataKey="date"
-                tickFormatter={d => dtf.format(new Date(d))}
+                tickFormatter={(d) => dtf.format(new Date(d))}
               />
               <XAxis dataKey="name" />
               <YAxis orientation="right" />
@@ -262,7 +262,7 @@ const App: React.FC<{}> = () => {
                 isAnimationActive={false}
                 offset={-300}
                 allowEscapeViewBox={{ x: true }}
-                labelFormatter={label => dtf.format(new Date(label))}
+                labelFormatter={(label) => dtf.format(new Date(label))}
               />
               {referenceArea()}
             </AreaChart>
@@ -272,10 +272,10 @@ const App: React.FC<{}> = () => {
               <h2
                 key={s}
                 className="hover-red"
-                onClick={d => {
+                onClick={(d) => {
                   setState({
                     ...state,
-                    excluded: state.excluded.remove(s)
+                    excluded: state.excluded.remove(s),
                   });
                 }}
               >
