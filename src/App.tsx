@@ -66,8 +66,6 @@ const App: React.FC<{}> = () => {
                 entries
                   .groupBy((e: Entry): number => e.date)
                   .mapKeys((d) => {
-                    console.log(d);
-                    console.log(typeof d);
                     return d;
                   })
                   .map(
@@ -183,6 +181,13 @@ const App: React.FC<{}> = () => {
                 .map(
                   ([s, d]: [string, Data]): JSX.Element => (
                     <AreaSeries
+                      color={default_color}
+                      opacity={0.3}
+                      stroke={getStroke(s)}
+                      mouseOver={(e) => {
+                        console.log(e);
+                        setState({ ...state });
+                      }}
                       data={d
                         .entrySeq()
                         .map(
