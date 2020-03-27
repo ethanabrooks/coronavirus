@@ -1,7 +1,7 @@
 import React from "react";
 import "./App.css";
 import "react-vis/dist/style.css";
-import { Router, Link, useParams } from "@reach/router";
+import { HashRouter as Router, Route, useParams } from "react-router-dom";
 
 import {
   ReferenceArea,
@@ -43,7 +43,7 @@ const default_color = "#00b6c6";
 
 const App: React.FC<{}> = () => {
   const [state, setState] = React.useState<State>({ type: "loading" });
-  const params = useParams();
+  const params: { stateId?: string } = useParams();
 
   React.useEffect(() => {
     const handleResize = () => {
@@ -128,7 +128,7 @@ const App: React.FC<{}> = () => {
         },
         (error) => setState({ type: "error", error })
       );
-  }, []);
+  }, [params.stateId]);
 
   switch (state.type) {
     case "loading":
@@ -338,4 +338,15 @@ const App: React.FC<{}> = () => {
   }
 };
 
-export default App;
+export default function () {
+  return (
+    <Router>
+      <Route path="/">
+        <App />
+      </Route>
+      <Route path="/state/:stateId">
+        <App />
+      </Route>
+    </Router>
+  );
+}
