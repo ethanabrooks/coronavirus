@@ -105,13 +105,10 @@ const App: React.FC<{}> = () => {
             (v: number, s: string) => -latest_data.get(s, 0)
           );
 
-          const cases_selected = params.stateId
-            ? latest_data.get(params.stateId)
-            : null;
-          const excluded =
-            cases_selected && params.stateId
-              ? states.filter((s) => latest_data.get(s, 0) > cases_selected)
-              : Set();
+          const cases_selected = latest_data.get(params.stateId);
+          const excluded = cases_selected
+            ? states.filter((s) => latest_data.get(s, 0) > cases_selected)
+            : Set();
 
           setState({
             type: "loaded",
@@ -194,20 +191,22 @@ const App: React.FC<{}> = () => {
       const getCases = (s: string): number => state.latest_data.get(s, 0);
       return (
         <div>
-          <div className="title">
-            <h1>Coronavirus Cases</h1>
-          </div>
-          <div className="instructions">
-            <p>
-              Mouse over the graph to see which state each line/area represents.
-              Click and drag to zoom.
-            </p>
-            <p>{`${state.mouseOverMessage}`}</p>
-            <p>
-              {state.excluded.isEmpty()
-                ? ""
-                : "Click on state names to add this state and all those with fewer cases back to chart."}
-            </p>
+          <div className="intro">
+            <div className="title">
+              <h1>Coronavirus Cases</h1>
+            </div>
+            <div className="instructions">
+              <p>
+                Mouse over the graph to see which state each line/area
+                represents.
+              </p>
+              <p>{`${state.mouseOverMessage}`}</p>
+              <p>
+                {state.excluded.isEmpty()
+                  ? ""
+                  : "Click on state names to add this state and all those with fewer cases back to chart."}
+              </p>
+            </div>
           </div>
           <div className="source">
             <p>source: The Covid Tracking Project</p>

@@ -41,15 +41,9 @@
   user-select: none;
 }
 
-.title {
+.intro {
   position: absolute;
   top: -10px;
-  left: 16px;
-}
-
-.instructions {
-  position: absolute;
-  top: 40px;
   left: 16px;
 }
 
