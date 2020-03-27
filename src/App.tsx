@@ -1,7 +1,7 @@
 import React from "react";
 import "./App.css";
 import "react-vis/dist/style.css";
-import { Router, Link } from "@reach/router";
+import { Router, Link, useParams } from "@reach/router";
 
 import {
   ReferenceArea,
@@ -43,6 +43,7 @@ const default_color = "#00b6c6";
 
 const App: React.FC<{}> = () => {
   const [state, setState] = React.useState<State>({ type: "loading" });
+  const params = useParams();
 
   React.useEffect(() => {
     const handleResize = () => {
@@ -104,12 +105,20 @@ const App: React.FC<{}> = () => {
             (v: number, s: string) => -latest_data.get(s, 0)
           );
 
+          const cases_selected = params.stateId
+            ? latest_data.get(params.stateId)
+            : null;
+          const excluded =
+            cases_selected && params.stateId
+              ? states.filter((s) => latest_data.get(s, 0) > cases_selected)
+              : Set();
+
           setState({
             type: "loaded",
             data,
             latest_data,
             states,
-            excluded: Set(),
+            excluded: excluded,
             highlighted: null,
             window_dimensions: window,
             selecting: null,
@@ -210,6 +219,7 @@ const App: React.FC<{}> = () => {
               data={chart_data().toJS()}
               margin={{ top: 10, right: 10, bottom: 10, left: 10 }}
               onMouseDown={(e) => {
+                console.log(e);
                 if (e) {
                   setState({
                     ...state,
