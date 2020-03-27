@@ -1,34 +1,28 @@
+/// <reference types="react-vis-types" />
 import React from "react";
 import "./App.css";
 import "react-vis/dist/style.css";
 import { HashRouter as Router, Route, useParams } from "react-router-dom";
 
-import {
-  ReferenceArea,
-  XAxis,
-  AreaChart,
-  Area,
-  YAxis,
-  Tooltip,
-} from "recharts";
+import { XYPlot, AreaSeries, AreaSeriesPoint } from "react-vis";
 import { OrderedSet, OrderedMap, Map, List, Collection, Set } from "immutable";
 
 type Entry = {
   state: string;
   positive: number;
-  dateChecked: Date;
+  date: number;
 };
 
 type XSelection = { left: number; right: number };
-type Data = OrderedMap<string, number>;
+type Data = OrderedMap<number, number>;
 
 type State =
   | { type: "loading" }
   | { type: "error"; error: any }
   | {
       type: "loaded";
-      data: List<Data>;
-      latest_data: Data;
+      data: Map<string, Data>;
+      latest_data: Map<string, number>;
       states: OrderedSet<string>;
       excluded: Set<string>;
       highlighted: null | string;
@@ -65,47 +59,34 @@ const App: React.FC<{}> = () => {
       .then((res) => res.json())
       .then(
         (raw_data: Entry[]) => {
-          const nested_data: Collection.Keyed<
-            Date,
-            Collection.Keyed<string, number>
-          > = List(raw_data)
-            .groupBy((e: Entry): Date => e.dateChecked)
+          const data: Map<string, Data> = List(raw_data)
+            .groupBy((e: Entry): string => e.state)
             .map((entries: Collection<number, Entry>) =>
-              entries
-                .groupBy((e: Entry): string => e.state)
-                .map(
-                  (entries: Collection<number, Entry>): Entry => entries.first()
-                )
-                .map((e: Entry) => e.positive)
-            );
-          const data = nested_data
-            .entrySeq()
-            .map(([date, cases]) =>
-              OrderedMap(cases).set("date", new Date(date).valueOf())
+              OrderedMap(
+                entries
+                  .groupBy((e: Entry): number => e.date)
+                  .mapKeys((d) => {
+                    console.log(d);
+                    console.log(typeof d);
+                    return d;
+                  })
+                  .map(
+                    (entries: Collection<number, Entry>): Entry =>
+                      entries.first()
+                  )
+                  .map((e: Entry) => e.positive)
+              )
             )
-            .toList()
+            .toMap();
 
-            .sortBy((m: Map<string, number>) => m.get("date"));
-
-          const unsortedStates = nested_data
-            .map((d) => d.keySeq())
-            .valueSeq()
-            .flatten()
-            .toOrderedSet()
-            .remove("date");
-
-          const latest_data = OrderedMap(
-            unsortedStates.map((s) => {
-              const last = data.findLast((d) => d.has(s));
-              return [s, last ? last.get(s, 0) : 0];
-            })
+          const latest_data: Map<string, number> = OrderedMap(
+            data.map((d) => d.last())
           );
 
-          const states: OrderedSet<string> = unsortedStates.sortBy(
-            (v: number, s: string) => -latest_data.get(s, 0)
-          );
-
-          const cases_selected = latest_data.get(params.stateId);
+          const states: OrderedSet<string> = OrderedSet(data.keys());
+          const cases_selected = params.stateId
+            ? latest_data.get(params.stateId, 0)
+            : null;
           const excluded = cases_selected
             ? states.filter((s) => latest_data.get(s, 0) > cases_selected)
             : Set();
@@ -172,22 +153,6 @@ const App: React.FC<{}> = () => {
         }
         return state.data;
       };
-      const referenceArea = () => {
-        if (state.selecting == null) {
-          return null;
-        }
-
-        const left = state.data.get(state.selecting.left)?.get("date");
-        const right = state.data.get(state.selecting.right)?.get("date");
-
-        return left && right ? (
-          <ReferenceArea
-            x1={Math.min(left, right)}
-            x2={Math.max(left, right)}
-            strokeOpacity={0.3}
-          />
-        ) : null;
-      };
       const getCases = (s: string): number => state.latest_data.get(s, 0);
       return (
         <div>
@@ -212,125 +177,25 @@ const App: React.FC<{}> = () => {
             <p>source: The Covid Tracking Project</p>
           </div>
           <div className="chart">
-            <AreaChart
-              width={width}
-              height={height - 10}
-              data={chart_data().toJS()}
-              margin={{ top: 10, right: 10, bottom: 10, left: 10 }}
-              onMouseDown={(e) => {
-                console.log(e);
-                if (e) {
-                  setState({
-                    ...state,
-                    selecting: {
-                      left: e.activeTooltipIndex,
-                      right: e.activeTooltipIndex,
-                    },
-                  });
-                }
-              }}
-              onMouseMove={(e) => {
-                if (state.selecting && e) {
-                  return setState({
-                    ...state,
-                    selecting: {
-                      left: state.selecting.left,
-                      right: e.activeTooltipIndex,
-                    },
-                  });
-                }
-              }}
-              onMouseUp={(e) => {
-                if (state.selecting && e) {
-                  if (state.selecting.left !== state.selecting.right) {
-                    return setState({
-                      ...state,
-                      selecting: null,
-                      selected: state.selecting,
-                    });
-                  }
-                }
-                return setState({
-                  ...state,
-                  selecting: null,
-                  selected: null,
-                });
-              }}
-            >
-              {state.states
-                .filterNot((s) => state.excluded.includes(s))
-                .toArray()
-                .map((s: string) => {
-                  return (
-                    <Area
-                      key={s}
-                      type="monotone"
-                      dataKey={s}
-                      stroke={getStroke(s)}
-                      opacity={getOpacity(s)}
-                      isAnimationActive={false}
-                      activeDot={{ r: 0 }}
-                      onMouseOver={(d) => {
-                        setState({
-                          ...state,
-                          highlighted: d.dataKey,
-                          mouseOverMessage: `Click to remove all states with more cases (currently) than ${d.dataKey} from the graph.`,
-                          excluded: state.excluded,
-                        });
-                      }}
-                      onMouseLeave={(d) => {
-                        setState({
-                          ...state,
-                          mouseOverMessage: "",
-                        });
-                      }}
-                      onClick={(d) => {
-                        const thisStateCases = getCases(d.dataKey);
-                        setState({
-                          ...state,
-                          excluded: state.states
-                            .filter((s) => getCases(s) > thisStateCases)
-                            .toSet()
-                            .union(state.excluded),
-                        });
-                      }}
+            <XYPlot width={width} height={height}>
+              {state.data
+                .entrySeq()
+                .map(
+                  ([s, d]: [string, Data]): JSX.Element => (
+                    <AreaSeries
+                      data={d
+                        .entrySeq()
+                        .map(
+                          ([d, c]: [number, number]): AreaSeriesPoint => {
+                            return { x: d.valueOf(), y: c };
+                          }
+                        )
+                        .toArray()}
                     />
-                  );
-                })}
-              <XAxis
-                dataKey="date"
-                tickFormatter={(d) => dtf.format(new Date(d))}
-              />
-              <XAxis dataKey="name" />
-              <YAxis orientation="right" />
-              <Tooltip
-                isAnimationActive={false}
-                offset={-300}
-                allowEscapeViewBox={{ x: true }}
-                labelFormatter={(label) => dtf.format(new Date(label))}
-                itemSorter={(i) => -i.value}
-              />
-              {referenceArea()}
-            </AreaChart>
-          </div>
-          <div className="excluded">
-            {state.excluded.map((s: string) => (
-              <h2
-                key={s}
-                className="hover-red"
-                onClick={(d) => {
-                  const thisStateCases = getCases(s);
-                  setState({
-                    ...state,
-                    excluded: state.excluded.filter(
-                      (s) => getCases(s) > thisStateCases
-                    ),
-                  });
-                }}
-              >
-                {s}
-              </h2>
-            ))}
+                  )
+                )
+                .toArray()}
+            </XYPlot>
           </div>
         </div>
       );
