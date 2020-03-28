@@ -3,17 +3,29 @@ import "./App.css";
 import "react-vis/dist/style.css";
 import { HashRouter as Router, Route, useParams } from "react-router-dom";
 
-import { VictoryChart, VictoryGroup, VictoryArea, VictoryTheme } from "victory";
+import {
+  VictoryChart,
+  VictoryGroup,
+  VictoryArea,
+  VictoryAxis,
+  VictoryTheme,
+} from "victory";
 import { OrderedSet, OrderedMap, Map, List, Collection, Set } from "immutable";
+
+type UnparsedEntry = {
+  state: string;
+  positive: number;
+  dateChecked: string;
+};
 
 type Entry = {
   state: string;
   positive: number;
-  date: number;
+  dateChecked: Date;
 };
 
 type XSelection = { left: number; right: number };
-type Data = OrderedMap<number, number>;
+type Data = OrderedMap<Date, number>;
 
 type State =
   | { type: "loading" }
@@ -24,7 +36,6 @@ type State =
       latest_data: Map<string, number>;
       states: OrderedSet<string>;
       excluded: Set<string>;
-      highlighted: null | string;
       window_dimensions: { innerWidth: number; innerHeight: number };
       selected: null | XSelection;
       selecting: null | XSelection;
@@ -55,15 +66,19 @@ const App: React.FC<{}> = () => {
 
   React.useEffect(() => {
     fetch("https://covidtracking.com/api/states/daily")
-      .then((res) => res.json())
+      .then((res: Response) => res.json())
       .then(
-        (raw_data: Entry[]) => {
+        (raw_data: UnparsedEntry[]) => {
           const data: Map<string, Data> = List(raw_data)
+            .map((e: UnparsedEntry) => {
+              return { ...e, dateChecked: new Date(e.dateChecked) };
+            })
+            .filterNot((e: Entry) => isNaN(+e.dateChecked))
             .groupBy((e: Entry): string => e.state)
             .map((entries: Collection<number, Entry>) =>
               OrderedMap(
                 entries
-                  .groupBy((e: Entry): number => e.date)
+                  .groupBy((e: Entry): Date => e.dateChecked)
                   .map(
                     (entries: Collection<number, Entry>): Entry =>
                       entries.first()
@@ -91,7 +106,6 @@ const App: React.FC<{}> = () => {
             latest_data,
             states,
             excluded: excluded,
-            highlighted: null,
             window_dimensions: window,
             selecting: null,
             selected: null,
@@ -113,24 +127,6 @@ const App: React.FC<{}> = () => {
         day: "numeric",
       });
 
-      const getStroke = (s: String) => {
-        if (state.highlighted === s) {
-          return highlight_color;
-        } else {
-          return default_color;
-        }
-      };
-
-      const getOpacity = (s: String) => {
-        switch (state.highlighted) {
-          case s:
-            return 1;
-          case null:
-            return 1;
-          default:
-            return 0.3;
-        }
-      };
       const {
         innerWidth: width,
         innerHeight: height,
@@ -178,56 +174,63 @@ const App: React.FC<{}> = () => {
             <p>source: The Covid Tracking Project</p>
           </div>
           <div className="chart">
-            <VictoryChart width={width} height={height}>
-              <VictoryGroup
-                style={{
-                  data: { strokeWidth: 3, fillOpacity: 0.4 },
-                }}
-              >
-                {state.data.entrySeq().map(
-                  ([s, d]: [string, Data]): JSX.Element => {
-                    console.log(d.toJS());
-                    return (
-                      <VictoryArea
-                        style={{
-                          data: { fill: default_color },
-                        }}
-                        data={d
-                          .entrySeq()
-                          .map(([d, c]: [number, number]) => {
-                            return { x: d, y: c };
-                          })
-                          .toArray()}
-                        events={[
-                          {
-                            target: "data",
-                            eventHandlers: {
-                              onMouseOver: () => {
-                                return {
-                                  mutation: (props) => {
-                                    const stroke =
-                                      props.style && props.style.stroke;
-                                    return stroke === highlight_color
-                                      ? null
-                                      : { style: { fill: highlight_color } };
-                                  },
-                                };
-                              },
+            <VictoryGroup
+              width={width}
+              height={height}
+              style={{
+                data: { strokeWidth: 3, fillOpacity: 0.4 },
+              }}
+            >
+              <VictoryAxis orientation="bottom" />
+              <VictoryAxis dependentAxis orientation="right" />
+              {state.data.entrySeq().map(
+                ([s, d]: [string, Data]): JSX.Element => {
+                  console.log(d.toJS());
+                  return (
+                    <VictoryArea
+                      style={{
+                        data: { fill: default_color, strokeWidth: 0 },
+                      }}
+                      data={d
+                        .entrySeq()
+                        .map(([d, c]: [Date, number]) => {
+                          return { x: d, y: c };
+                        })
+                        .toArray()}
+                      events={[
+                        {
+                          target: "data",
+                          eventHandlers: {
+                            onMouseOver: () => {
+                              return {
+                                mutation: (props) => {
+                                  const stroke =
+                                    props.style && props.style.stroke;
+                                  return stroke === highlight_color
+                                    ? null
+                                    : {
+                                        style: {
+                                          fill: highlight_color,
+                                          opacity: 1,
+                                        },
+                                      };
+                                },
+                              };
+                            },
 
-                              onMouseOut: () => {
-                                return {
-                                  mutation: () => null,
-                                };
-                              },
+                            onMouseOut: () => {
+                              return {
+                                mutation: () => null,
+                              };
                             },
                           },
-                        ]}
-                      />
-                    );
-                  }
-                )}
-              </VictoryGroup>
-            </VictoryChart>
+                        },
+                      ]}
+                    />
+                  );
+                }
+              )}
+            </VictoryGroup>
           </div>
         </div>
       );
