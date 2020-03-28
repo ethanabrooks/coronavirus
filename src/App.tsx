@@ -1,10 +1,9 @@
-/// <reference types="react-vis-types" />
 import React from "react";
 import "./App.css";
 import "react-vis/dist/style.css";
 import { HashRouter as Router, Route, useParams } from "react-router-dom";
 
-import { XYPlot, AreaSeries, AreaSeriesPoint } from "react-vis";
+import { VictoryChart, VictoryGroup, VictoryArea, VictoryTheme } from "victory";
 import { OrderedSet, OrderedMap, Map, List, Collection, Set } from "immutable";
 
 type Entry = {
@@ -27,8 +26,8 @@ type State =
       excluded: Set<string>;
       highlighted: null | string;
       window_dimensions: { innerWidth: number; innerHeight: number };
-      selecting: null | XSelection;
       selected: null | XSelection;
+      selecting: null | XSelection;
       mouseOverMessage: string;
     };
 
@@ -65,9 +64,6 @@ const App: React.FC<{}> = () => {
               OrderedMap(
                 entries
                   .groupBy((e: Entry): number => e.date)
-                  .mapKeys((d) => {
-                    return d;
-                  })
                   .map(
                     (entries: Collection<number, Entry>): Entry =>
                       entries.first()
@@ -152,6 +148,13 @@ const App: React.FC<{}> = () => {
         return state.data;
       };
       const getCases = (s: string): number => state.latest_data.get(s, 0);
+      const sampleData = [
+        { x: 1, y: 2 },
+        { x: 2, y: 3 },
+        { x: 3, y: 5 },
+        { x: 4, y: 4 },
+        { x: 5, y: 7 },
+      ];
       return (
         <div>
           <div className="intro">
@@ -175,37 +178,86 @@ const App: React.FC<{}> = () => {
             <p>source: The Covid Tracking Project</p>
           </div>
           <div className="chart">
-            <XYPlot width={width} height={height}>
-              {state.data
-                .entrySeq()
-                .map(
-                  ([s, d]: [string, Data]): JSX.Element => (
-                    <AreaSeries
-                      color={default_color}
-                      opacity={0.3}
-                      stroke={getStroke(s)}
-                      mouseOver={(e) => {
-                        console.log(e);
-                        setState({ ...state });
-                      }}
-                      data={d
-                        .entrySeq()
-                        .map(
-                          ([d, c]: [number, number]): AreaSeriesPoint => {
-                            return { x: d.valueOf(), y: c };
-                          }
-                        )
-                        .toArray()}
-                    />
-                  )
-                )
-                .toArray()}
-            </XYPlot>
+            <VictoryChart width={width} height={height}>
+              <VictoryGroup
+                style={{
+                  data: { strokeWidth: 3, fillOpacity: 0.4 },
+                }}
+              >
+                {state.data.entrySeq().map(
+                  ([s, d]: [string, Data]): JSX.Element => {
+                    console.log(d.toJS());
+                    return (
+                      <VictoryArea
+                        style={{
+                          data: { fill: default_color },
+                        }}
+                        data={d
+                          .entrySeq()
+                          .map(([d, c]: [number, number]) => {
+                            return { x: d, y: c };
+                          })
+                          .toArray()}
+                        events={[
+                          {
+                            target: "data",
+                            eventHandlers: {
+                              onMouseOver: () => {
+                                return {
+                                  mutation: (props) => {
+                                    const stroke =
+                                      props.style && props.style.stroke;
+                                    return stroke === highlight_color
+                                      ? null
+                                      : { style: { fill: highlight_color } };
+                                  },
+                                };
+                              },
+
+                              onMouseOut: () => {
+                                return {
+                                  mutation: () => null,
+                                };
+                              },
+                            },
+                          },
+                        ]}
+                      />
+                    );
+                  }
+                )}
+              </VictoryGroup>
+            </VictoryChart>
           </div>
         </div>
       );
   }
 };
+//<XYPlot width={width - 100} height={height}>
+//{state.data
+//.entrySeq()
+//.map(
+//([s, d]: [string, Data]): JSX.Element => (
+//<AreaSeries
+//color={default_color}
+//opacity={0.3}
+//stroke={getStroke(s)}
+//onSeriesMouseOver={(e) => {
+//setState({ ...state, highlighted: s });
+//}}
+//data={d
+//.entrySeq()
+//.map(
+//([d, c]: [number, number]): AreaSeriesPoint => {
+//return { x: d.valueOf(), y: c };
+//}
+//)
+//.toArray()}
+///>
+//)
+//)
+//.toArray()}
+//</XYPlot>
 
 export default function () {
   return (
