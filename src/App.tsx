@@ -157,7 +157,26 @@ const App: React.FC<{}> = () => {
             <p>source: The Covid Tracking Project</p>
           </div>
           <div className="chart">
-            <VictoryChart width={width} height={height} scale={{ x: "time" }}>
+            <VictoryChart
+              width={width}
+              height={height}
+              containerComponent={
+                <VictoryVoronoiContainer
+                  voronoiDimension="x"
+                  labels={({ datum }) => {
+                    console.log(datum);
+                    return datum.l;
+                  }}
+                  labelComponent={
+                    <VictoryTooltip
+                      cornerRadius={0}
+                      flyoutStyle={{ fill: "white" }}
+                    />
+                  }
+                />
+              }
+              scale={{ x: "time" }}
+            >
               <VictoryAxis orientation="bottom" />
               <VictoryAxis dependentAxis orientation="right" />
               <VictoryGroup>
