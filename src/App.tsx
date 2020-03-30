@@ -167,12 +167,7 @@ const App: React.FC<{}> = () => {
                     console.log(datum);
                     return datum.l;
                   }}
-                  labelComponent={
-                    <VictoryTooltip
-                      cornerRadius={0}
-                      flyoutStyle={{ fill: "white" }}
-                    />
-                  }
+                  labelComponent={<VictoryTooltip centerOffset={{ x: -100 }} />}
                 />
               }
               scale={{ x: "time" }}
