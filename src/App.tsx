@@ -186,6 +186,46 @@ const App: React.FC<{}> = () => {
                           })
                           .toArray()}
                         interpolation={"natural"}
+                        style={{
+                          data: {
+                            fill: default_color,
+                            fillOpacity: 0.3,
+                            strokeWidth: 0,
+                          },
+                          labels: {
+                            fontSize: 15,
+                            fill: ({ datum }) =>
+                              datum.x === 3 ? "#000000" : "#c43a31",
+                          },
+                        }}
+                        events={[
+                          {
+                            target: "data",
+                            eventHandlers: {
+                              onMouseOver: () => {
+                                return {
+                                  mutation: (props) => {
+                                    const stroke =
+                                      props.style && props.style.stroke;
+                                    return stroke === highlight_color
+                                      ? null
+                                      : {
+                                          style: {
+                                            fill: highlight_color,
+                                            opacity: 1,
+                                          },
+                                        };
+                                  },
+                                };
+                              },
+                              onMouseOut: () => {
+                                return {
+                                  mutation: () => null,
+                                };
+                              },
+                            },
+                          },
+                        ]}
                       />
                     );
                   }
