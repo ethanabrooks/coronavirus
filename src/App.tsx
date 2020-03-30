@@ -161,7 +161,11 @@ const App: React.FC<{}> = () => {
               width={width}
               height={height}
               containerComponent={
-                <VictoryVoronoiContainer labels={(d: any) => d.datum.l} />
+                <VictoryVoronoiContainer
+                  voronoiDimension="x"
+                  labels={(d: any) => d.datum.l}
+                  labelComponent={<VictoryTooltip />}
+                />
               }
               scale={{ x: "time" }}
             >
@@ -181,12 +185,54 @@ const App: React.FC<{}> = () => {
                         interpolation={"natural"}
                         style={{
                           data: {
-                            fill: (d) =>
-                              d.active ? highlight_color : default_color,
-                            opacity: (d) => (d.active ? 1 : 0.3),
+                            fill: (d) => default_color,
+                            opacity: (d) => 0.3,
+                          },
+                          labels: {
+                            fill: (d) => {
+                              return s === "PA" ? "red" : default_color;
+                            },
                           },
                         }}
-                        labelComponent={<VictoryTooltip />}
+                        events={[
+                          {
+                            target: "data",
+                            eventHandlers: {
+                              onMouseOver: () => {
+                                return [
+                                  {
+                                    target: "data",
+                                    mutation: (props) => {
+                                      console.log("data", props);
+                                      return {
+                                        style: {
+                                          fill: highlight_color,
+                                          opacity: 1,
+                                        },
+                                      };
+                                    },
+                                  },
+                                ];
+                              },
+
+                              onMouseOut: () => {
+                                return [
+                                  {
+                                    target: "data",
+                                    mutation: (props) => {
+                                      return {
+                                        style: {
+                                          fill: default_color,
+                                          opacity: 0.3,
+                                        },
+                                      };
+                                    },
+                                  },
+                                ];
+                              },
+                            },
+                          },
+                        ]}
                       />
                     );
                   }
