@@ -47,6 +47,7 @@ type State =
       selected: null | XSelection;
       selecting: null | XSelection;
       mouseOverMessage: string;
+      highlighted: null | string;
     };
 
 const highlight_color = "#ff0079";
@@ -116,6 +117,7 @@ const App: React.FC<{}> = () => {
             selecting: null,
             selected: null,
             mouseOverMessage: "",
+            highlighted: null,
           });
         },
         (error) => setState({ type: "error", error })
@@ -190,7 +192,10 @@ const App: React.FC<{}> = () => {
                           },
                           labels: {
                             fill: (d) => {
-                              return s === "PA" ? "red" : default_color;
+                              console.log("labels1", d);
+                              return s === state.highlighted
+                                ? highlight_color
+                                : default_color;
                             },
                           },
                         }}
@@ -203,8 +208,9 @@ const App: React.FC<{}> = () => {
                                   {
                                     target: "data",
                                     mutation: (props) => {
-                                      console.log("data", props);
+                                      setState({ ...state, highlighted: s });
                                       return {
+                                        active: true,
                                         style: {
                                           fill: highlight_color,
                                           opacity: 1,
