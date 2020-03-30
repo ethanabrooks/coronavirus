@@ -161,14 +161,7 @@ const App: React.FC<{}> = () => {
               width={width}
               height={height}
               containerComponent={
-                <VictoryVoronoiContainer
-                  voronoiDimension="x"
-                  labels={({ datum }) => {
-                    console.log(datum);
-                    return datum.l;
-                  }}
-                  labelComponent={<VictoryTooltip centerOffset={{ x: -100 }} />}
-                />
+                <VictoryVoronoiContainer labels={(d: any) => d.datum.l} />
               }
               scale={{ x: "time" }}
             >
@@ -188,44 +181,12 @@ const App: React.FC<{}> = () => {
                         interpolation={"natural"}
                         style={{
                           data: {
-                            fill: default_color,
-                            fillOpacity: 0.3,
-                            strokeWidth: 0,
-                          },
-                          labels: {
-                            fontSize: 15,
-                            fill: ({ datum }) =>
-                              datum.x === 3 ? "#000000" : "#c43a31",
+                            fill: (d) =>
+                              d.active ? highlight_color : default_color,
+                            opacity: (d) => (d.active ? 1 : 0.3),
                           },
                         }}
-                        events={[
-                          {
-                            target: "data",
-                            eventHandlers: {
-                              onMouseOver: () => {
-                                return {
-                                  mutation: (props) => {
-                                    const stroke =
-                                      props.style && props.style.stroke;
-                                    return stroke === highlight_color
-                                      ? null
-                                      : {
-                                          style: {
-                                            fill: highlight_color,
-                                            opacity: 1,
-                                          },
-                                        };
-                                  },
-                                };
-                              },
-                              onMouseOut: () => {
-                                return {
-                                  mutation: () => null,
-                                };
-                              },
-                            },
-                          },
-                        ]}
+                        labelComponent={<VictoryTooltip />}
                       />
                     );
                   }
