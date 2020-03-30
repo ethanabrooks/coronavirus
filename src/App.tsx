@@ -166,7 +166,14 @@ const App: React.FC<{}> = () => {
                 <VictoryVoronoiContainer
                   voronoiDimension="x"
                   labels={(d: any) => d.datum.l}
-                  labelComponent={<VictoryTooltip />}
+                  labelComponent={
+                    <VictoryTooltip
+                      centerOffset={{ x: -100 }}
+                      constrainToVisibleArea={true}
+                      flyoutStyle={{ fill: "white", strokeWidth: 0.3 }}
+                      cornerRadius={0}
+                    />
+                  }
                 />
               }
               scale={{ x: "time" }}
@@ -192,7 +199,6 @@ const App: React.FC<{}> = () => {
                           },
                           labels: {
                             fill: (d) => {
-                              console.log("labels1", d);
                               return s === state.highlighted
                                 ? highlight_color
                                 : default_color;
@@ -204,37 +210,33 @@ const App: React.FC<{}> = () => {
                             target: "data",
                             eventHandlers: {
                               onMouseOver: () => {
-                                return [
-                                  {
-                                    target: "data",
-                                    mutation: (props) => {
-                                      setState({ ...state, highlighted: s });
-                                      return {
-                                        active: true,
-                                        style: {
-                                          fill: highlight_color,
-                                          opacity: 1,
-                                        },
-                                      };
-                                    },
+                                return {
+                                  target: "data",
+                                  mutation: (props) => {
+                                    setState({ ...state, highlighted: s });
+                                    return {
+                                      active: true,
+                                      style: {
+                                        fill: highlight_color,
+                                        opacity: 1,
+                                      },
+                                    };
                                   },
-                                ];
+                                };
                               },
 
                               onMouseOut: () => {
-                                return [
-                                  {
-                                    target: "data",
-                                    mutation: (props) => {
-                                      return {
-                                        style: {
-                                          fill: default_color,
-                                          opacity: 0.3,
-                                        },
-                                      };
-                                    },
+                                return {
+                                  target: "data",
+                                  mutation: (props) => {
+                                    return {
+                                      style: {
+                                        fill: default_color,
+                                        opacity: 0.3,
+                                      },
+                                    };
                                   },
-                                ];
+                                };
                               },
                             },
                           },
