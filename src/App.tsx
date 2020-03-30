@@ -7,8 +7,10 @@ import {
   VictoryChart,
   VictoryGroup,
   VictoryArea,
+  VictoryVoronoiContainer,
   VictoryAxis,
   VictoryTheme,
+  VictoryTooltip,
 } from "victory";
 import {
   Seq,
@@ -189,63 +191,83 @@ const App: React.FC<{}> = () => {
             <p>source: The Covid Tracking Project</p>
           </div>
           <div className="chart">
-            <VictoryGroup
+            <VictoryChart
               width={width}
               height={height}
-              style={{
-                data: { strokeWidth: 3, fillOpacity: 0.4 },
-              }}
+              scale={{ x: "time" }}
+              containerComponent={
+                <VictoryVoronoiContainer
+                  voronoiDimension="x"
+                  labels={({ datum }) => {
+                    console.log(datum);
+                    return datum.l;
+                  }}
+                  labelComponent={
+                    <VictoryTooltip
+                      cornerRadius={0}
+                      flyoutStyle={{ fill: "white" }}
+                    />
+                  }
+                />
+              }
             >
-              <VictoryAxis orientation="bottom" />
-              <VictoryAxis dependentAxis orientation="right" />
-              {state.data.entrySeq().map(
-                ([s, d]: [string, Data]): JSX.Element => {
-                  console.log(d.toJS());
-                  return (
-                    <VictoryArea
-                      style={{
-                        data: { fill: default_color, strokeWidth: 0 },
-                      }}
-                      data={d
-                        .entrySeq()
-                        .map(([d, c]: [Date, number]) => {
-                          return { x: d, y: c };
-                        })
-                        .toArray()}
-                      events={[
-                        {
-                          target: "data",
-                          eventHandlers: {
-                            onMouseOver: () => {
-                              return {
-                                mutation: (props) => {
-                                  const stroke =
-                                    props.style && props.style.stroke;
-                                  return stroke === highlight_color
-                                    ? null
-                                    : {
-                                        style: {
-                                          fill: highlight_color,
-                                          opacity: 1,
-                                        },
-                                      };
-                                },
-                              };
-                            },
+              <VictoryGroup
+                style={{
+                  data: { strokeWidth: 3, fillOpacity: 0.4 },
+                }}
+              >
+                <VictoryAxis orientation="bottom" />
+                <VictoryAxis dependentAxis orientation="right" />
+                {state.data.entrySeq().map(
+                  ([s, d]: [string, Data]): JSX.Element => {
+                    return (
+                      <VictoryArea
+                        labelComponent={<VictoryTooltip />}
+                        style={{
+                          data: { fill: default_color, strokeWidth: 0 },
+                        }}
+                        data={d
+                          .entrySeq()
+                          .map(([d, c]: [Date, number]) => {
+                            return { x: d, y: c, l: `${s}: ${c}` };
+                          })
+                          .toArray()}
+                        interpolation={"natural"}
+                        events={[
+                          {
+                            target: "data",
+                            eventHandlers: {
+                              onMouseOver: () => {
+                                return {
+                                  mutation: (props) => {
+                                    const stroke =
+                                      props.style && props.style.stroke;
+                                    return stroke === highlight_color
+                                      ? null
+                                      : {
+                                          style: {
+                                            fill: highlight_color,
+                                            opacity: 1,
+                                          },
+                                        };
+                                  },
+                                };
+                              },
 
-                            onMouseOut: () => {
-                              return {
-                                mutation: () => null,
-                              };
+                              onMouseOut: () => {
+                                return {
+                                  mutation: () => null,
+                                };
+                              },
                             },
                           },
-                        },
-                      ]}
-                    />
-                  );
-                }
-              )}
-            </VictoryGroup>
+                        ]}
+                      />
+                    );
+                  }
+                )}
+              </VictoryGroup>
+            </VictoryChart>
           </div>
         </div>
       );
