@@ -10,7 +10,15 @@ import {
   VictoryAxis,
   VictoryTheme,
 } from "victory";
-import { OrderedSet, OrderedMap, Map, List, Collection, Set } from "immutable";
+import {
+  Seq,
+  OrderedSet,
+  OrderedMap,
+  Map,
+  List,
+  Collection,
+  Set,
+} from "immutable";
 
 type UnparsedEntry = {
   state: string;
@@ -25,7 +33,7 @@ type Entry = {
 };
 
 type XSelection = { left: number; right: number };
-type Data = OrderedMap<Date, number>;
+type Data = Seq<Date, number>;
 
 type State =
   | { type: "loading" }
@@ -75,16 +83,23 @@ const App: React.FC<{}> = () => {
             })
             .filterNot((e: Entry) => isNaN(+e.dateChecked))
             .groupBy((e: Entry): string => e.state)
-            .map((entries: Collection<number, Entry>) =>
-              OrderedMap(
-                entries
-                  .groupBy((e: Entry): Date => e.dateChecked)
-                  .map(
-                    (entries: Collection<number, Entry>): Entry =>
-                      entries.first()
-                  )
-                  .map((e: Entry) => e.positive)
-              )
+            .map(
+              (entries: Collection<number, Entry>): Data =>
+                Seq.Keyed(
+                  entries
+                    .map((e: Entry): [Date, number] => [
+                      e.dateChecked,
+                      e.positive,
+                    ])
+                    .values()
+                )
+              //entries
+              //.groupBy((e: Entry): Date => e.dateChecked)
+              //.map(
+              //(entries: Collection<number, Entry>): Entry =>
+              //entries.first()
+              //)
+              //.map((e: Entry) => e.positive)
             )
             .toMap();
 
