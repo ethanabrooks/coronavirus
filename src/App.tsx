@@ -157,40 +157,27 @@ const App: React.FC<{}> = () => {
             <p>source: The Covid Tracking Project</p>
           </div>
           <div className="chart">
-            <VictoryGroup
-              width={width}
-              height={height}
-              scale={{ x: "time" }}
-              style={{
-                data: {
-                  strokeWidth: 0,
-                  fillOpacity: 0.3,
-                  fill: default_color,
-                },
-              }}
-              containerComponent={
-                <VictoryVoronoiContainer
-                  labelComponent={<VictoryTooltip centerOffset={{ x: -100 }} />}
-                  labels={({ datum }) => datum.l}
-                />
-              }
-            >
-              {state.data.entrySeq().map(
-                ([s, d]: [string, Data]): JSX.Element => {
-                  return (
-                    <VictoryArea
-                      data={d
-                        .entrySeq()
-                        .map(([d, c]: [Date, number]) => {
-                          return { x: d, y: c, l: `${s}: ${c}` };
-                        })
-                        .toArray()}
-                      interpolation={"natural"}
-                    />
-                  );
-                }
-              )}
-            </VictoryGroup>
+            <VictoryChart width={width} height={height} scale={{ x: "time" }}>
+              <VictoryAxis orientation="bottom" />
+              <VictoryAxis dependentAxis orientation="right" />
+              <VictoryGroup>
+                {state.data.entrySeq().map(
+                  ([s, d]: [string, Data]): JSX.Element => {
+                    return (
+                      <VictoryArea
+                        data={d
+                          .entrySeq()
+                          .map(([d, c]: [Date, number]) => {
+                            return { x: d, y: c, l: `${s}: ${c}` };
+                          })
+                          .toArray()}
+                        interpolation={"natural"}
+                      />
+                    );
+                  }
+                )}
+              </VictoryGroup>
+            </VictoryChart>
           </div>
         </div>
       );
