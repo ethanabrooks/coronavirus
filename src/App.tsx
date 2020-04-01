@@ -1,15 +1,15 @@
 import React, { useRef, useEffect } from "react";
 import * as d3 from "d3";
+import { Seq, Collection, List, OrderedMap } from "immutable";
+import { isPresent } from "ts-is-present";
 
 interface IProps {
   data?: number[];
 }
 
-type Entry = {
-  state: string;
-  positive: number;
-  dateChecked: Date;
-};
+type RawEntry = { state: string; positive: number; dateChecked: string };
+
+type Entry = { state: string; positive: number; dateChecked: number };
 
 /* Component */
 export const MyD3Component = (props: IProps) => {
@@ -18,33 +18,83 @@ export const MyD3Component = (props: IProps) => {
        initialized null and React will assign it later (see the return statement) */
   const d3Container = useRef(null);
 
+  const {
+    innerWidth: width,
+    innerHeight: height,
+  }: { innerWidth: number; innerHeight: number } = window;
+
   /* The useEffect Hook is for running side effects outside of React,
        for instance inserting elements into the DOM using D3 */
   useEffect(
     () => {
       fetch("https://covidtracking.com/api/states/daily")
         .then((res) => res.json())
-        .then((raw_data: Entry[]) => {
+        .then((raw_data: RawEntry[]) => {
           if (props.data && d3Container.current) {
+            const _data: OrderedMap<string, OrderedMap<number, number>> = List(
+              raw_data
+            )
+              .map((e: RawEntry): null | Entry => {
+                const date = new Date(e.dateChecked).valueOf();
+                return isNaN(date) ? null : { ...e, dateChecked: date };
+              })
+              .filter(isPresent)
+              .groupBy((e: Entry): string => e.state)
+              .map(
+                (
+                  entries: Collection<number, Entry>
+                ): OrderedMap<number, number> =>
+                  entries
+                    .groupBy((e: Entry) => e.dateChecked)
+                    .map(
+                      (entries: Collection<number, Entry>): Entry =>
+                        entries.first()
+                    )
+                    .map((e: Entry): number => e.positive)
+                    .toOrderedMap()
+                    .sort()
+              )
+              .toOrderedMap()
+              .sortBy((entries: OrderedMap<number, number>) => entries.last());
+            console.log(d3Container.current);
+            var dataset = [5, 10, 15, 20, 25];
+
             const svg = d3.select(d3Container.current);
+            // @ts-ignore
+            //.attr("viewBox", [0, 1, width, height]);
+            //.style("overflow", "visible");
 
             // Bind D3 data
-            const update = svg.append("g").selectAll("text").data(props.data);
+            const data = _data.get("MI");
+            if (data) {
+              console.log(data.toJS());
+              //const x = d3
+              //.scaleUtc()
+              //.domain(d3.extent(data.keys().toArray()))
+              //.range([0, width]);
+              //const line = d3
+              //.line()
+              //.x((d) => x(d.date))
+              //.y((d) => y(d.value));
+              const update = svg.selectAll("circle").data(dataset);
 
-            // Enter new D3 elements
-            update
-              .enter()
-              .append("text")
-              .attr("x", (d, i) => i * 25)
-              .attr("y", 40)
-              .style("font-size", 24)
-              .text((d: number) => d);
+              // Enter new D3 elements
+              update
+                .enter()
+                .append("circle")
+                // @ts-ignore
+                .attr("cx", (d: number) => 10 * d)
+                .attr("cy", (d: number) => 10 * d)
+                .attr("r", 22)
+                .attr("fill", "blue");
 
-            // Update existing D3 elements
-            update.attr("x", (d, i) => i * 40).text((d: number) => d);
+              // Update existing D3 elements
+              // @ts-ignore
+              //update.attr("x", (d, i) => i * 40).text((d: number) => d);
 
-            // Remove old D3 elements
-            update.exit().remove();
+              // Remove old D3 elements
+              update.exit().remove();
+            }
           }
         });
     },
@@ -60,7 +110,12 @@ export const MyD3Component = (props: IProps) => {
   );
 
   return (
-    <svg className="d3-component" width={400} height={200} ref={d3Container} />
+    <svg
+      className="d3-component"
+      width={width}
+      height={height - 50}
+      ref={d3Container}
+    />
   );
 };
 
