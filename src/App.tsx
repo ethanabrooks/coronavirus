@@ -76,24 +76,25 @@ export const MyD3Component = (props: IProps) => {
               const y = d3
                 .scaleLinear()
                 .domain(d3.extent(data.valueSeq().toArray()) as number[])
-                .range([0, height]);
-              //const line = d3
-              //.line()
-              //.x((d) => x(d.date))
-              //.y((d) => y(d.value));
-              const update = svg.selectAll("circle").data(data.toArray());
+                .range([height - 100, 10]);
+
+              const line = d3
+                .line()
+                .defined((d) => true)
+                .x(([d, p]) => x(d))
+                .y(([d, p]) => y(p));
+              console.log(line);
+              const update = svg.append("path").datum(data.toArray());
 
               // Enter new D3 elements
               update
-                .enter()
-                .append("circle")
+                .attr("fill", "none")
+                .attr("stroke", "steelblue")
+                .attr("stroke-width", 1.5)
+                .attr("stroke-linejoin", "round")
+                .attr("stroke-linecap", "round")
                 // @ts-ignore
-                .attr("cx", ([d, p]) => x(d))
-                .attr("cy", ([d, p]) => {
-                  return y(p);
-                })
-                .attr("r", 22)
-                .attr("fill", "blue");
+                .attr("d", line);
 
               // Update existing D3 elements
               // @ts-ignore
