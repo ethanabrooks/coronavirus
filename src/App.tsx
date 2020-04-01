@@ -52,7 +52,7 @@ export const MyD3Component = (props: IProps) => {
                     )
                     .map((e: Entry): number => e.positive)
                     .toOrderedMap()
-                    .sort()
+                    .sortBy((v, k) => k)
               )
               .toOrderedMap()
               .sortBy((entries: OrderedMap<number, number>) => entries.last());
