@@ -68,23 +68,30 @@ export const MyD3Component = (props: IProps) => {
             const data = _data.get("MI");
             if (data) {
               console.log(data.toJS());
-              //const x = d3
-              //.scaleUtc()
-              //.domain(d3.extent(data.keys().toArray()))
-              //.range([0, width]);
+              console.log(d3.extent(data.keySeq().toArray()));
+              const x = d3
+                .scaleLinear()
+                .domain(d3.extent(data.keySeq().toArray()) as number[])
+                .range([0, width]);
+              const y = d3
+                .scaleLinear()
+                .domain(d3.extent(data.valueSeq().toArray()) as number[])
+                .range([0, height]);
               //const line = d3
               //.line()
               //.x((d) => x(d.date))
               //.y((d) => y(d.value));
-              const update = svg.selectAll("circle").data(dataset);
+              const update = svg.selectAll("circle").data(data.toArray());
 
               // Enter new D3 elements
               update
                 .enter()
                 .append("circle")
                 // @ts-ignore
-                .attr("cx", (d: number) => 10 * d)
-                .attr("cy", (d: number) => 10 * d)
+                .attr("cx", ([d, p]) => x(d))
+                .attr("cy", ([d, p]) => {
+                  return y(p);
+                })
                 .attr("r", 22)
                 .attr("fill", "blue");
 
