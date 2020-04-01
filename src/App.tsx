@@ -31,14 +31,16 @@ export const MyD3Component = (props: IProps) => {
         .then((res) => res.json())
         .then((raw_data: RawEntry[]) => {
           if (props.data && d3Container.current) {
-            const _data: OrderedMap<string, OrderedMap<number, number>> = List(
-              raw_data
-            )
+            const parsed_data: List<Entry> = List(raw_data)
               .map((e: RawEntry): null | Entry => {
                 const date = new Date(e.dateChecked).valueOf();
                 return isNaN(date) ? null : { ...e, dateChecked: date };
               })
-              .filter(isPresent)
+              .filter(isPresent);
+            const data: OrderedMap<
+              string,
+              OrderedMap<number, number>
+            > = parsed_data
               .groupBy((e: Entry): string => e.state)
               .map(
                 (
@@ -57,55 +59,66 @@ export const MyD3Component = (props: IProps) => {
               .toOrderedMap()
               .sortBy((entries: OrderedMap<number, number>) => entries.last());
             console.log(d3Container.current);
-            var dataset = [5, 10, 15, 20, 25];
 
-            const svg = d3.select(d3Container.current);
-            // @ts-ignore
-            //.attr("viewBox", [0, 1, width, height]);
-            //.style("overflow", "visible");
+            const svg = d3
+              .select(d3Container.current)
+              .style("overflow", "visible")
+              // @ts-ignore
+              .attr("viewBox", [0, 0, width, height]);
+            const margin = { top: 20, right: 20, bottom: 30, left: 30 };
 
             // Bind D3 data
-            const data = _data.get("MI");
-            if (data) {
-              console.log(data.toJS());
-              console.log(d3.extent(data.keySeq().toArray()));
-              const x = d3
-                .scaleLinear()
-                .domain(d3.extent(data.keySeq().toArray()) as number[])
-                .range([0, width]);
-              const y = d3
-                .scaleLinear()
-                .domain(d3.extent(data.valueSeq().toArray()) as number[])
-                .range([height - 100, 10]);
+            console.log(data.toJS());
+            console.log(d3.extent(data.keySeq().toArray()));
+            const x = d3
+              .scaleLinear()
+              .domain(
+                // @ts-ignore
+                d3.extent(
+                  parsed_data.toArray(),
+                  (d: Entry): number => d.dateChecked
+                )
+              )
+              .range([margin.left, width - margin.right]);
+            const y = d3
+              .scaleLinear()
+              .domain(
+                // @ts-ignore
+                d3.extent(
+                  parsed_data.toArray(),
+                  (d: Entry): number => d.positive
+                )
+              )
+              .range([height - margin.bottom, margin.top]);
 
-              const line = d3
-                .line()
-                .defined((d) => true)
-                .x(([d, p]) => x(d))
-                .y(([d, p]) => y(p));
-              console.log(line);
-              const update = svg.append("g");
+            const line = d3
+              .line()
+              .defined((d) => true)
+              .x(([d, p]) => x(d))
+              .y(([d, p]) => y(p));
+            console.log(line);
+            const update = svg.append("g");
 
-              // Enter new D3 elements
-              update
-                .attr("fill", "none")
-                .attr("stroke", "steelblue")
-                .attr("stroke-width", 1.5)
-                .attr("stroke-linejoin", "round")
-                .attr("stroke-linecap", "round")
-                .selectAll("path")
-                .data(_data.toArray())
-                .join("path")
-                .attr("d", ([s, d]) => line(d.toArray()));
-              // @ts-ignore
+            // Enter new D3 elements
+            update
+              .attr("fill", "none")
+              .attr("stroke", "steelblue")
+              .attr("stroke-width", 1.5)
+              .attr("stroke-linejoin", "round")
+              .attr("stroke-linecap", "round")
+              .selectAll("path")
+              .data(data.toArray())
+              .join("path")
+              .attr("d", ([s, d]: [string, OrderedMap<number, number>]) =>
+                line(d.toArray())
+              );
 
-              // Update existing D3 elements
-              // @ts-ignore
-              //update.attr("x", (d, i) => i * 40).text((d: number) => d);
+            // Update existing D3 elements
+            // @ts-ignore
+            //update.attr("x", (d, i) => i * 40).text((d: number) => d);
 
-              // Remove old D3 elements
-              update.exit().remove();
-            }
+            // Remove old D3 elements
+            update.exit().remove();
           }
         });
     },
