@@ -8,8 +8,15 @@ interface IProps {
 }
 
 type RawEntry = { state: string; positive: number; dateChecked: string };
-
 type Entry = { state: string; positive: number; dateChecked: number };
+
+type State =
+  | { type: "loading" }
+  | { type: "error"; error: any }
+  | {
+      type: "loaded";
+      highlighted: null | string;
+    };
 
 /* Component */
 export const MyD3Component = (props: IProps) => {
