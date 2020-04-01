@@ -20,6 +20,7 @@ type State =
 
 /* Component */
 export const MyD3Component = (props: IProps) => {
+  const [state, setState] = React.useState<State>({ type: "loading" });
   /* The useRef Hook creates a variable that "holds on" to a value across rendering
        passes. In this case it will hold our component's SVG DOM element. It's
        initialized null and React will assign it later (see the return statement) */
