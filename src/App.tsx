@@ -84,7 +84,7 @@ export const MyD3Component = (props: IProps) => {
                 .x(([d, p]) => x(d))
                 .y(([d, p]) => y(p));
               console.log(line);
-              const update = svg.append("path").datum(data.toArray());
+              const update = svg.append("g");
 
               // Enter new D3 elements
               update
@@ -93,8 +93,11 @@ export const MyD3Component = (props: IProps) => {
                 .attr("stroke-width", 1.5)
                 .attr("stroke-linejoin", "round")
                 .attr("stroke-linecap", "round")
-                // @ts-ignore
-                .attr("d", line);
+                .selectAll("path")
+                .data(_data.toArray())
+                .join("path")
+                .attr("d", ([s, d]) => line(d.toArray()));
+              // @ts-ignore
 
               // Update existing D3 elements
               // @ts-ignore
