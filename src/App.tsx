@@ -55,7 +55,9 @@ export const App = (props: IProps) => {
                 .sortBy((v, k) => k)
           )
           .toOrderedMap()
-          .sortBy((entries: OrderedMap<number, number>) => entries.last());
+          .sortBy(
+            (entries: OrderedMap<number, number>) => -(entries.last() as number)
+          );
 
         const [left, right] = d3.extent(
           parsed_data.toArray(),
@@ -117,6 +119,7 @@ export const App = (props: IProps) => {
                   d={`${state.line(a.toArray())}`}
                   opacity={s === state.highlighted ? 1 : 0.2}
                   onClick={(e) => {
+                    console.log(s, e);
                     setState({ ...state, highlighted: s });
                   }}
                 />
