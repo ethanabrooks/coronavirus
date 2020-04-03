@@ -20,6 +20,8 @@ type State =
       highlighted: string | null;
       extent: { top: number; right: number; bottom: number; left: number };
     };
+const highlight_color = "#ff0079";
+const default_color = "#00b6c6";
 
 /* Component */
 export const App = (props: IProps) => {
@@ -98,7 +100,46 @@ export const App = (props: IProps) => {
     case "error":
       return <div>Error: {state.error.message}</div>;
     case "loaded":
-      const data = state.data.toArray();
+      const jsxs: JSX.Element[] = state.data
+        .toArray()
+        .map(([s, d]: [string, OrderedMap<number, number>]): [
+          JSX.Element,
+          JSX.Element
+        ] => {
+          const highlighted = s === state.highlighted;
+          const line = (
+            <path
+              fill="none"
+              stroke={highlighted ? highlight_color : "none"}
+              d={`${state.line(List(d.entries()).toArray())}`}
+              opacity={highlighted ? 0.7 : 0.2}
+            />
+          );
+          const a: List<[number, number]> = List(d.entries())
+            .push([state.extent.right, 0])
+            .push([state.extent.left, 0]);
+          const area = (
+            <path
+              fill={default_color}
+              d={`${state.line(a.toArray())}`}
+              opacity={s === state.highlighted ? 0.7 : 0.2}
+              onMouseOver={(e) => {
+                setState({
+                  ...state,
+                  highlighted: s,
+                });
+              }}
+              onMouseOut={(e) => {
+                setState({
+                  ...state,
+                  highlighted: null,
+                });
+              }}
+            />
+          );
+          return [area, line];
+        })
+        .flat();
       return (
         <svg
           className="d3-component"
@@ -108,49 +149,7 @@ export const App = (props: IProps) => {
           viewBox={`${[0, 0, width, height]}`}
           transform={`translate(${margin.left}, ${margin.top})`}
         >
-          {data.map(
-            ([s, d]: [string, OrderedMap<number, number>]): JSX.Element => {
-              const a: List<[number, number]> = List(d.entries())
-                .push([state.extent.right, 0])
-                .push([state.extent.left, 0]);
-
-              return (
-                <path
-                  fill="blue"
-                  d={`${state.line(a.toArray())}`}
-                  opacity={s === state.highlighted ? 0.7 : 0.2}
-                  onMouseOver={(e) => {
-                    console.log(s, e);
-                    setState({
-                      ...state,
-                      highlighted: s,
-                    });
-                  }}
-                  onMouseOut={(e) => {
-                    console.log(s, e);
-                    setState({
-                      ...state,
-                      highlighted: null,
-                    });
-                  }}
-                />
-              );
-            }
-          )}
-          {data.map(
-            ([s, d]: [string, OrderedMap<number, number>]): JSX.Element => {
-              const highlighted = s === state.highlighted;
-
-              return (
-                <path
-                  fill="none"
-                  stroke={highlighted ? "red" : "none"}
-                  d={`${state.line(List(d.entries()).toArray())}`}
-                  opacity={highlighted ? 0.7 : 0.2}
-                />
-              );
-            }
-          )}
+          {jsxs}
         </svg>
       );
   }
