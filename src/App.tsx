@@ -30,6 +30,7 @@ export const MyD3Component = (props: IProps) => {
     innerWidth: width,
     innerHeight: height,
   }: { innerWidth: number; innerHeight: number } = window;
+  const margin = { top: 30, right: 15, bottom: 15, left: 15 };
 
   /* The useEffect Hook is for running side effects outside of React,
        for instance inserting elements into the DOM using D3 */
@@ -68,16 +69,7 @@ export const MyD3Component = (props: IProps) => {
               .sortBy((entries: OrderedMap<number, number>) => entries.last());
             console.log(d3Container.current);
 
-            const svg = d3
-              .select(d3Container.current)
-              .style("overflow", "visible")
-              // @ts-ignore
-              .attr("viewBox", [0, 0, width, height]);
-            const margin = { top: 20, right: 20, bottom: 30, left: 30 };
-
             // Bind D3 data
-            console.log(data.toJS());
-            console.log(d3.extent(data.keySeq().toArray()));
             const x = d3
               .scaleLinear()
               .domain(
@@ -104,29 +96,23 @@ export const MyD3Component = (props: IProps) => {
               .defined((d) => true)
               .x(([d, p]) => x(d))
               .y(([d, p]) => y(p));
-            console.log(line);
-            const update = svg.append("g");
 
-            // Enter new D3 elements
-            update
-              .attr("fill", "none")
-              .attr("stroke", "steelblue")
-              .attr("stroke-width", 1.5)
-              .attr("stroke-linejoin", "round")
-              .attr("stroke-linecap", "round")
+            const svg = d3
+              .select(d3Container.current)
+              //.style("overflow", "visible")
+              //.attr("fill", "none")
+              //.attr("stroke", "steelblue")
+              //.attr("stroke-linejoin", "round")
+              //.attr("stroke-linecap", "round")
               .selectAll("path")
               .data(data.toArray())
               .join("path")
+              .on("mouseenter", () => alert("hello"))
               .attr("d", ([s, d]: [string, OrderedMap<number, number>]) =>
                 line(d.toArray())
               );
 
-            // Update existing D3 elements
-            // @ts-ignore
-            //update.attr("x", (d, i) => i * 40).text((d: number) => d);
-
-            // Remove old D3 elements
-            update.exit().remove();
+            svg.exit().remove();
           }
         });
     },
@@ -144,8 +130,13 @@ export const MyD3Component = (props: IProps) => {
   return (
     <svg
       className="d3-component"
+      style={{ overflow: "visible" }}
       width={width}
       height={height - 50}
+      viewBox={`${[0, 0, width, height]}`}
+      transform={`translate(${margin.left}, ${margin.top})`}
+      fill="none"
+      stroke="steelblue"
       ref={d3Container}
     />
   );
