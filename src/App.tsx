@@ -98,6 +98,7 @@ export const App = (props: IProps) => {
     case "error":
       return <div>Error: {state.error.message}</div>;
     case "loaded":
+      const data = state.data.toArray();
       return (
         <svg
           className="d3-component"
@@ -106,9 +107,8 @@ export const App = (props: IProps) => {
           height={height - 50}
           viewBox={`${[0, 0, width, height]}`}
           transform={`translate(${margin.left}, ${margin.top})`}
-          fill="blue"
         >
-          {state.data.toArray().map(
+          {data.map(
             ([s, d]: [string, OrderedMap<number, number>]): JSX.Element => {
               const a: List<[number, number]> = List(d.entries())
                 .push([state.extent.right, 0])
@@ -116,6 +116,7 @@ export const App = (props: IProps) => {
 
               return (
                 <path
+                  fill="blue"
                   d={`${state.line(a.toArray())}`}
                   opacity={s === state.highlighted ? 0.7 : 0.2}
                   onMouseOver={(e) => {
@@ -132,6 +133,20 @@ export const App = (props: IProps) => {
                       highlighted: null,
                     });
                   }}
+                />
+              );
+            }
+          )}
+          {data.map(
+            ([s, d]: [string, OrderedMap<number, number>]): JSX.Element => {
+              const highlighted = s === state.highlighted;
+
+              return (
+                <path
+                  fill="none"
+                  stroke={highlighted ? "red" : "none"}
+                  d={`${state.line(List(d.entries()).toArray())}`}
+                  opacity={highlighted ? 0.7 : 0.2}
                 />
               );
             }
