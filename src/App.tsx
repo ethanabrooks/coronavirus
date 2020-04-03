@@ -16,12 +16,12 @@ type State =
   | {
       type: "loaded";
       data: OrderedMap<string, OrderedMap<number, number>>;
-      line: d3.Line<[number, number]>;
-      highlighted: string | null;
+      highlighted: { state: string; xpos: number } | null;
       extent: { top: number; right: number; bottom: number; left: number };
     };
-const highlight_color = "#ff0079";
-const default_color = "#00b6c6";
+const highlightColor = "#ff0079";
+const defaultColor = "#00b6c6";
+const margin = { right: 100, bottom: 100 };
 
 /* Component */
 export const App = (props: IProps) => {
@@ -36,7 +36,6 @@ export const App = (props: IProps) => {
     fetch("https://covidtracking.com/api/states/daily")
       .then((res) => res.json())
       .then((raw_data: RawEntry[]) => {
-        const margin = { top: 30, right: 15, bottom: 15, left: 15 };
         const parsed_data: List<Entry> = List(raw_data)
           .map((e: RawEntry): null | Entry => {
             const date = new Date(e.dateChecked).valueOf();
@@ -69,25 +68,10 @@ export const App = (props: IProps) => {
           parsed_data.toArray(),
           (d: Entry): number => d.positive
         ) as number[];
-        const x = d3
-          .scaleLinear()
-          .domain([left, right])
-          .range([margin.left, width - margin.right]);
-        const y = d3
-          .scaleLinear()
-          .domain([top, bottom])
-          .range([height - margin.bottom, margin.top]);
-
-        const line = d3
-          .line()
-          .defined((d) => true)
-          .x(([d, p]) => x(d))
-          .y(([d, p]) => y(p));
 
         setState({
           type: "loaded",
           data,
-          line,
           highlighted: null,
           extent: { left, right, top, bottom },
         });
@@ -100,33 +84,46 @@ export const App = (props: IProps) => {
     case "error":
       return <div>Error: {state.error.message}</div>;
     case "loaded":
+      const { left, right, top, bottom } = state.extent;
+      const x = d3
+        .scaleLinear()
+        .domain([left, right])
+        .range([0, width - margin.right]);
+      const y = d3
+        .scaleLinear()
+        .domain([top, bottom])
+        .range([height - margin.bottom, 0]);
+      const line = d3
+        .line()
+        .x(([d, p]) => x(d))
+        .y(([d, p]) => y(p));
       const jsxs: JSX.Element[] = state.data
         .toArray()
         .map(([s, d]: [string, OrderedMap<number, number>]): [
           JSX.Element,
           JSX.Element
         ] => {
-          const highlighted = s === state.highlighted;
-          const line = (
+          const highlighted = s === state.highlighted?.state;
+          const linePath = (
             <path
               fill="none"
-              stroke={highlighted ? highlight_color : "none"}
-              d={`${state.line(List(d.entries()).toArray())}`}
+              stroke={highlighted ? highlightColor : "none"}
+              d={`${[0, height]}`}
               opacity={highlighted ? 0.7 : 0.2}
             />
           );
           const a: List<[number, number]> = List(d.entries())
             .push([state.extent.right, 0])
             .push([state.extent.left, 0]);
-          const area = (
+          const areaPath = (
             <path
-              fill={default_color}
-              d={`${state.line(a.toArray())}`}
-              opacity={s === state.highlighted ? 0.7 : 0.2}
+              fill={defaultColor}
+              d={`${line(a.toArray())}`}
+              opacity={highlighted ? 0.7 : 0.2}
               onMouseOver={(e) => {
                 setState({
                   ...state,
-                  highlighted: s,
+                  highlighted: { state: s, xpos: e.pageX },
                 });
               }}
               onMouseOut={(e) => {
@@ -137,19 +134,34 @@ export const App = (props: IProps) => {
               }}
             />
           );
-          return [area, line];
+          return [linePath, areaPath];
         })
         .flat();
+      const line2 = d3
+        .line()
+        .x(([a, b]) => a)
+        .y(([a, b]) => b);
+      const tooltipLine = state.highlighted ? (
+        <path
+          fill="none"
+          stroke={defaultColor}
+          d={`${line2([
+            [state.highlighted.xpos, 0],
+            [state.highlighted.xpos, height],
+          ])}`}
+          opacity={1}
+        />
+      ) : null;
       return (
         <svg
           className="d3-component"
           style={{ overflow: "visible" }}
           width={width}
-          height={height - 50}
+          height={height}
           viewBox={`${[0, 0, width, height]}`}
-          transform={`translate(${30}, ${20})`}
         >
           {jsxs}
+          {tooltipLine}
         </svg>
       );
   }
