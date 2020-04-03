@@ -31,12 +31,12 @@ export const App = (props: IProps) => {
     innerWidth: width,
     innerHeight: height,
   }: { innerWidth: number; innerHeight: number } = window;
-  const margin = { top: 30, right: 15, bottom: 15, left: 15 };
 
   React.useMemo(() => {
     fetch("https://covidtracking.com/api/states/daily")
       .then((res) => res.json())
       .then((raw_data: RawEntry[]) => {
+        const margin = { top: 30, right: 15, bottom: 15, left: 15 };
         const parsed_data: List<Entry> = List(raw_data)
           .map((e: RawEntry): null | Entry => {
             const date = new Date(e.dateChecked).valueOf();
@@ -92,7 +92,7 @@ export const App = (props: IProps) => {
           extent: { left, right, top, bottom },
         });
       });
-  }, [margin, height, width]);
+  }, [height, width]);
 
   switch (state.type) {
     case "loading":
@@ -147,7 +147,7 @@ export const App = (props: IProps) => {
           width={width}
           height={height - 50}
           viewBox={`${[0, 0, width, height]}`}
-          transform={`translate(${margin.left}, ${margin.top})`}
+          transform={`translate(${30}, ${20})`}
         >
           {jsxs}
         </svg>
