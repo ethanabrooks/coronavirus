@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React from "react";
 import * as d3 from "d3";
 import { Collection, List, OrderedMap } from "immutable";
 import { isPresent } from "ts-is-present";
@@ -92,7 +92,7 @@ export const App = (props: IProps) => {
           extent: { left, right, top, bottom },
         });
       });
-  }, []);
+  }, [margin, height, width]);
 
   switch (state.type) {
     case "loading":
