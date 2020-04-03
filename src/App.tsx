@@ -17,6 +17,8 @@ type State =
       type: "loaded";
       data: OrderedMap<string, OrderedMap<number, number>>;
       line: d3.Line<[number, number]>;
+      highlighted: string | null;
+      extent: { top: number; right: number; bottom: number; left: number };
     };
 
 /* Component */
@@ -55,23 +57,21 @@ export const App = (props: IProps) => {
           .toOrderedMap()
           .sortBy((entries: OrderedMap<number, number>) => entries.last());
 
+        const [left, right] = d3.extent(
+          parsed_data.toArray(),
+          (d: Entry): number => d.dateChecked
+        ) as number[];
+        const [top, bottom] = d3.extent(
+          parsed_data.toArray(),
+          (d: Entry): number => d.positive
+        ) as number[];
         const x = d3
           .scaleLinear()
-          .domain(
-            d3.extent(
-              parsed_data.toArray(),
-              (d: Entry): number => d.dateChecked
-            ) as number[]
-          )
+          .domain([left, right])
           .range([margin.left, width - margin.right]);
         const y = d3
           .scaleLinear()
-          .domain(
-            d3.extent(
-              parsed_data.toArray(),
-              (d: Entry): number => d.positive
-            ) as number[]
-          )
+          .domain([top, bottom])
           .range([height - margin.bottom, margin.top]);
 
         const line = d3
@@ -80,7 +80,13 @@ export const App = (props: IProps) => {
           .x(([d, p]) => x(d))
           .y(([d, p]) => y(p));
 
-        setState({ type: "loaded", data, line });
+        setState({
+          type: "loaded",
+          data,
+          line,
+          highlighted: null,
+          extent: { left, right, top, bottom },
+        });
       });
   });
 
@@ -98,13 +104,24 @@ export const App = (props: IProps) => {
           height={height - 50}
           viewBox={`${[0, 0, width, height]}`}
           transform={`translate(${margin.left}, ${margin.top})`}
-          fill="none"
-          stroke="steelblue"
+          fill="blue"
         >
           {state.data.toArray().map(
-            ([s, d]: [string, OrderedMap<number, number>]): JSX.Element => (
-              <path d={`${state.line(d.toArray())}`} />
-            )
+            ([s, d]: [string, OrderedMap<number, number>]): JSX.Element => {
+              const a: List<[number, number]> = List(d.entries())
+                .push([state.extent.right, 0])
+                .push([state.extent.left, 0]);
+
+              return (
+                <path
+                  d={`${state.line(a.toArray())}`}
+                  opacity={s === state.highlighted ? 1 : 0.2}
+                  onClick={(e) => {
+                    setState({ ...state, highlighted: s });
+                  }}
+                />
+              );
+            }
           )}
         </svg>
       );
