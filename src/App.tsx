@@ -31,7 +31,7 @@ export const App = (props: IProps) => {
   }: { innerWidth: number; innerHeight: number } = window;
   const margin = { top: 30, right: 15, bottom: 15, left: 15 };
 
-  useEffect(() => {
+  React.useMemo(() => {
     fetch("https://covidtracking.com/api/states/daily")
       .then((res) => res.json())
       .then((raw_data: RawEntry[]) => {
@@ -90,7 +90,7 @@ export const App = (props: IProps) => {
           extent: { left, right, top, bottom },
         });
       });
-  });
+  }, []);
 
   switch (state.type) {
     case "loading":
@@ -117,10 +117,20 @@ export const App = (props: IProps) => {
               return (
                 <path
                   d={`${state.line(a.toArray())}`}
-                  opacity={s === state.highlighted ? 1 : 0.2}
-                  onClick={(e) => {
+                  opacity={s === state.highlighted ? 0.7 : 0.2}
+                  onMouseOver={(e) => {
                     console.log(s, e);
-                    setState({ ...state, highlighted: s });
+                    setState({
+                      ...state,
+                      highlighted: s,
+                    });
+                  }}
+                  onMouseOut={(e) => {
+                    console.log(s, e);
+                    setState({
+                      ...state,
+                      highlighted: null,
+                    });
                   }}
                 />
               );
