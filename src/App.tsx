@@ -1,6 +1,6 @@
 import React, { useRef, useEffect } from "react";
 import * as d3 from "d3";
-import { Seq, Collection, List, OrderedMap } from "immutable";
+import { OrderedSet, Collection, List, OrderedMap } from "immutable";
 import { isPresent } from "ts-is-present";
 
 interface IProps {
@@ -15,7 +15,10 @@ type State =
   | { type: "error"; error: any }
   | {
       type: "loaded";
-      highlighted: null | string;
+      data: OrderedMap<string, OrderedMap<number, number>>;
+      x: any;
+      y: any;
+      line: any;
     };
 
 /* Component */
@@ -113,6 +116,7 @@ export const MyD3Component = (props: IProps) => {
               );
 
             svg.exit().remove();
+            setState({ type: "loaded", data, x, y, line });
           }
         });
     },
@@ -127,6 +131,64 @@ export const MyD3Component = (props: IProps) => {
     [props.data, d3Container.current]
   );
 
+  //React.useEffect(() => {
+  //fetch("https://covidtracking.com/api/states/daily")
+  //.then((res) => res.json())
+  //.then(
+  //(raw_data: Entry[]) => {
+  //const nested_data: Collection.Keyed<
+  //number,
+  //Collection.Keyed<string, number>
+  //> = List(raw_data)
+  //.groupBy((e: Entry): number => e.dateChecked.valueOf())
+  //.map((entries: Collection<number, Entry>) =>
+  //entries
+  //.groupBy((e: Entry): string => e.state)
+  //.map(
+  //(entries: Collection<number, Entry>): Entry => entries.first()
+  //)
+  //.map((e: Entry) => e.positive)
+  //);
+  //const data = nested_data
+  //.entrySeq()
+  //.map(([date, cases]) =>
+  //OrderedMap(cases).set("date", new Date(date).valueOf())
+  //)
+  //.toList();
+
+  //const unsortedStates = nested_data
+  //.map((d) => d.keySeq())
+  //.valueSeq()
+  //.flatten()
+  //.toOrderedSet()
+  //.remove("date");
+
+  //const latest_data = OrderedMap(
+  //unsortedStates.map((s) => {
+  //const last = data.findLast((d) => d.has(s));
+  //return [s, last ? last.get(s, 0) : 0];
+  //})
+  //);
+
+  //const states: OrderedSet<string> = unsortedStates.sortBy(
+  //(v: number, s: string) => -latest_data.get(s, 0)
+  //);
+
+  //setState({
+  //type: "loaded",
+  //highlighted: null,
+  //});
+  //},
+  //(error) => setState({ type: "error", error })
+  //);
+  //}, []);
+
+  //switch (state.type) {
+  //case "loading":
+  //return <div>Loading...</div>;
+  //case "error":
+  //return <div>Error: {state.error.message}</div>;
+  //case "loaded":
   return (
     <svg
       className="d3-component"
@@ -140,6 +202,7 @@ export const MyD3Component = (props: IProps) => {
       ref={d3Container}
     />
   );
+  //}
 };
 
 /* App */
