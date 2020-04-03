@@ -14,11 +14,17 @@ type State =
   | { type: "loading" }
   | { type: "error"; error: any }
   | {
-      type: "loaded";
+      type: "loaded data";
       data: OrderedMap<string, OrderedMap<number, number>>;
       highlighted: { state: string; xpos: number } | null;
       extent: { top: number; right: number; bottom: number; left: number };
     };
+//| {
+//type: "highlighting";
+//state: string;
+//highlighted: { state: string; xpos: number } | null;
+//extent: { top: number; right: number; bottom: number; left: number };
+//};
 const highlightColor = "#ff0079";
 const defaultColor = "#00b6c6";
 const margin = { right: 100, bottom: 100 };
@@ -70,7 +76,7 @@ export const App = (props: IProps) => {
         ) as number[];
 
         setState({
-          type: "loaded",
+          type: "loaded data",
           data,
           highlighted: null,
           extent: { left, right, top, bottom },
@@ -83,7 +89,7 @@ export const App = (props: IProps) => {
       return <div>Loading...</div>;
     case "error":
       return <div>Error: {state.error.message}</div>;
-    case "loaded":
+    case "loaded data":
       const { left, right, top, bottom } = state.extent;
       const x = d3
         .scaleLinear()
@@ -97,46 +103,46 @@ export const App = (props: IProps) => {
         .line()
         .x(([d, p]) => x(d))
         .y(([d, p]) => y(p));
-      const jsxs: JSX.Element[] = state.data
-        .toArray()
-        .map(([s, d]: [string, OrderedMap<number, number>]): [
-          JSX.Element,
-          JSX.Element
-        ] => {
-          const highlighted = s === state.highlighted?.state;
-          const linePath = (
-            <path
-              fill="none"
-              stroke={highlighted ? highlightColor : "none"}
-              d={`${[0, height]}`}
-              opacity={highlighted ? 0.7 : 0.2}
-            />
-          );
-          const a: List<[number, number]> = List(d.entries())
-            .push([state.extent.right, 0])
-            .push([state.extent.left, 0]);
-          const areaPath = (
-            <path
-              fill={defaultColor}
-              d={`${line(a.toArray())}`}
-              opacity={highlighted ? 0.7 : 0.2}
-              onMouseOver={(e) => {
-                setState({
-                  ...state,
-                  highlighted: { state: s, xpos: e.pageX },
-                });
-              }}
-              onMouseOut={(e) => {
-                setState({
-                  ...state,
-                  highlighted: null,
-                });
-              }}
-            />
-          );
-          return [linePath, areaPath];
-        })
-        .flat();
+      const jsxs: OrderedMap<
+        string,
+        [JSX.Element, JSX.Element]
+      > = state.data.map((d: OrderedMap<number, number>, s: string): [
+        JSX.Element,
+        JSX.Element
+      ] => {
+        const highlighted = s === state.highlighted?.state;
+        const linePath = (
+          <path
+            fill="none"
+            stroke={highlighted ? highlightColor : "none"}
+            d={`${[0, height]}`}
+            opacity={highlighted ? 0.7 : 0.2}
+          />
+        );
+        const a: List<[number, number]> = List(d.entries())
+          .push([state.extent.right, 0])
+          .push([state.extent.left, 0]);
+        const areaPath = (
+          <path
+            fill={defaultColor}
+            d={`${line(a.toArray())}`}
+            opacity={highlighted ? 0.7 : 0.2}
+            onMouseOver={(e) => {
+              setState({
+                ...state,
+                highlighted: { state: s, xpos: e.pageX },
+              });
+            }}
+            onMouseOut={(e) => {
+              setState({
+                ...state,
+                highlighted: null,
+              });
+            }}
+          />
+        );
+        return [linePath, areaPath];
+      });
       const line2 = d3
         .line()
         .x(([a, b]) => a)
@@ -160,8 +166,7 @@ export const App = (props: IProps) => {
           height={height}
           viewBox={`${[0, 0, width, height]}`}
         >
-          {jsxs}
-          {tooltipLine}
+          {jsxs.valueSeq().flatten().toArray()}
         </svg>
       );
   }
