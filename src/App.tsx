@@ -146,7 +146,7 @@ const Chart: React.FC<{ rawData: RawEntry[] }> = ({ rawData }) => {
   );
 };
 
-const App: React.FC<{}> = () => {
+export default function () {
   type State =
     | { type: "loading" }
     | { type: "error"; error: any }
@@ -179,12 +179,4 @@ const App: React.FC<{}> = () => {
     case "loaded":
       return <Chart rawData={state.rawData} />;
   }
-};
-
-export default function () {
-  return (
-    <div className="my-app">
-      <App />
-    </div>
-  );
 }
