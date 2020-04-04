@@ -158,16 +158,8 @@ export default function () {
     fetch("https://covidtracking.com/api/states/daily")
       .then((res) => res.json())
       .then(
-        (rawData) =>
-          setState({
-            type: "loaded",
-            rawData,
-          }),
-        (error) =>
-          setState({
-            type: "error",
-            error,
-          })
+        (rawData) => setState({ type: "loaded", rawData }),
+        (error) => setState({ type: "error", error })
       );
   }, []);
 
