@@ -24,8 +24,6 @@ const Chart: React.FC<{ rawData: RawEntry[] }> = ({ rawData }) => {
     height: number;
   }>({ width: window.innerWidth, height: window.innerHeight });
 
-  React.useEffect(() => console.log(highlightedState), [highlightedState]);
-
   React.useEffect(() => {
     window.addEventListener("resize", () =>
       setExtent({ width: window.innerWidth, height: window.innerHeight })
@@ -65,74 +63,67 @@ const Chart: React.FC<{ rawData: RawEntry[] }> = ({ rawData }) => {
     [parsedData]
   );
 
-  const [left, right] = d3.extent(
-    parsedData.toArray(),
-    (d: Entry): number => d.dateChecked
-  ) as number[];
+  const paths = React.useMemo(() => {
+    const [left, right] = d3.extent(
+      parsedData.toArray(),
+      (d: Entry): number => d.dateChecked
+    ) as number[];
 
-  const [top, bottom] = d3.extent(
-    parsedData.toArray(),
-    (d: Entry): number => d.positive
-  ) as number[];
+    const [top, bottom] = d3.extent(
+      parsedData.toArray(),
+      (d: Entry): number => d.positive
+    ) as number[];
 
-  const x = d3
-    .scaleLinear()
-    .domain([left, right])
-    .range([0, width - margin.right]);
+    const x = d3
+      .scaleLinear()
+      .domain([left, right])
+      .range([0, width - margin.right]);
 
-  const y = d3
-    .scaleLinear()
-    .domain([top, bottom])
-    .range([height - margin.bottom, 0]);
+    const y = d3
+      .scaleLinear()
+      .domain([top, bottom])
+      .range([height - margin.bottom, 0]);
 
-  const line = d3
-    .line()
-    .x(([d, p]) => x(d))
-    .y(([d, p]) => y(p));
+    const line = d3
+      .line()
+      .x(([d, _]) => x(d))
+      .y(([_, p]) => y(p));
 
-  const paths = React.useMemo(
-    () =>
-      data
-        .map((d: OrderedMap<number, number>, s: string) => {
-          const isHighlighted = s === highlightedState;
-          const a: List<[number, number]> = List(d.entries())
-            .push([right, 0])
-            .push([left, 0]);
+    return data
+      .map((d: OrderedMap<number, number>, s: string) => {
+        const isHighlighted = s === highlightedState;
+        const a: List<[number, number]> = List(d.entries())
+          .push([right, 0])
+          .push([left, 0]);
 
-          return (
-            <React.Fragment key={s}>
-              <path
-                fill="none"
-                stroke={isHighlighted ? highlightColor : "none"}
-                d={`${line(d.toArray())}`}
-                opacity={isHighlighted ? 0.7 : 0.2}
-              />
-              <path
-                fill={defaultColor}
-                d={`${line(a.toArray())}`}
-                opacity={isHighlighted ? 0.7 : 0.2}
-                onMouseOver={(e) => {
-                  e.stopPropagation();
-                  console.log("mouse enter", s);
-                  setHighlightedState(s);
-                }}
-                onMouseOut={(e) => {
-                  e.stopPropagation();
-                  console.log("mouse leave", s);
-                  setHighlightedState((oldState) => {
-                    console.log("mouse out", oldState, "current", s);
-                    return oldState === s ? null : oldState;
-                  });
-                }}
-              />
-            </React.Fragment>
-          );
-        })
-        .valueSeq()
-        .toIndexedSeq()
-        .toArray(),
-    [highlightedState, data, line, left, right]
-  );
+        return (
+          <React.Fragment key={s}>
+            <path
+              fill="none"
+              stroke={isHighlighted ? highlightColor : "none"}
+              d={`${line(d.toArray())}`}
+              opacity={isHighlighted ? 0.7 : 0.2}
+            />
+            <path
+              fill={defaultColor}
+              d={`${line(a.toArray())}`}
+              opacity={isHighlighted ? 0.7 : 0.2}
+              onMouseEnter={(e) => {
+                setHighlightedState(s);
+              }}
+              onMouseLeave={(e) => {
+                setHighlightedState((oldState) =>
+                  oldState === s ? null : oldState
+                );
+              }}
+            />
+          </React.Fragment>
+        );
+      })
+      .valueSeq()
+      .toIndexedSeq()
+      .toArray();
+  }, [highlightedState, data, parsedData, width, height]);
 
   let tooltipLine = null;
   if (mouseX != null) {
@@ -149,7 +140,7 @@ const Chart: React.FC<{ rawData: RawEntry[] }> = ({ rawData }) => {
           [mouseX, 0],
           [mouseX, height],
         ])}`}
-        opacity={1}
+        style={{ pointerEvents: "none" }}
       />
     );
   }
@@ -200,7 +191,7 @@ export const App = (props: IProps) => {
 
   switch (state.type) {
     case "loading":
-      return <div>Loading...</div>;
+      return <div>Loading…</div>;
     case "error":
       return <div>Error: {state.error.message}</div>;
     case "loaded":
