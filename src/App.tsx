@@ -108,8 +108,6 @@ const Chart: React.FC<{ rawData: RawEntry[] }> = ({ rawData }) => {
           </React.Fragment>
         );
       })
-      .valueSeq()
-      .toIndexedSeq()
       .toArray();
   }, [highlightedState, data, parsedData, width, height]);
 
