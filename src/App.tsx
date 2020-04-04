@@ -14,10 +14,15 @@ type State =
   | { type: "loading" }
   | { type: "error"; error: any }
   | {
-      type: "loaded data";
+      type: "loaded";
       data: OrderedMap<string, OrderedMap<number, number>>;
       highlighted: { state: string; xpos: number } | null;
       extent: { top: number; right: number; bottom: number; left: number };
+    }
+  | {
+      type: "mousemove";
+      paths: JSX.Element[];
+      xpos: number;
     };
 //| {
 //type: "highlighting";
@@ -76,20 +81,20 @@ export const App = (props: IProps) => {
         ) as number[];
 
         setState({
-          type: "loaded data",
+          type: "loaded",
           data,
           highlighted: null,
           extent: { left, right, top, bottom },
         });
       });
-  }, [height, width]);
+  }, []);
 
   switch (state.type) {
     case "loading":
       return <div>Loading...</div>;
     case "error":
       return <div>Error: {state.error.message}</div>;
-    case "loaded data":
+    case "loaded":
       const { left, right, top, bottom } = state.extent;
       const x = d3
         .scaleLinear()
@@ -103,7 +108,7 @@ export const App = (props: IProps) => {
         .line()
         .x(([d, p]) => x(d))
         .y(([d, p]) => y(p));
-      const jsxs: OrderedMap<
+      const elements: OrderedMap<
         string,
         [JSX.Element, JSX.Element]
       > = state.data.map((d: OrderedMap<number, number>, s: string): [
@@ -143,21 +148,11 @@ export const App = (props: IProps) => {
         );
         return [linePath, areaPath];
       });
-      const line2 = d3
-        .line()
-        .x(([a, b]) => a)
-        .y(([a, b]) => b);
-      const tooltipLine = state.highlighted ? (
-        <path
-          fill="none"
-          stroke={defaultColor}
-          d={`${line2([
-            [state.highlighted.xpos, 0],
-            [state.highlighted.xpos, height],
-          ])}`}
-          opacity={1}
-        />
-      ) : null;
+      const paths: JSX.Element[] = elements
+        .valueSeq()
+        .flatten()
+        .toIndexedSeq()
+        .toArray();
       return (
         <svg
           className="d3-component"
@@ -165,8 +160,48 @@ export const App = (props: IProps) => {
           width={width}
           height={height}
           viewBox={`${[0, 0, width, height]}`}
+          onMouseMove={(e) => {
+            setState({ type: "mousemove", paths, xpos: e.pageX });
+          }}
         >
-          {jsxs.valueSeq().flatten().toArray()}
+          >{paths}
+        </svg>
+      );
+    case "mousemove":
+      const line2 = d3
+        .line()
+        .x(([a, b]) => a)
+        .y(([a, b]) => b);
+      console.log("state.xpos", state.xpos);
+      const tooltipLine = (
+        <path
+          fill="none"
+          stroke={defaultColor}
+          d={`${line2([
+            [state.xpos, 0],
+            [state.xpos, height],
+          ])}`}
+          opacity={1}
+        />
+      );
+      return (
+        <svg
+          className="d3-component"
+          style={{ overflow: "visible" }}
+          width={width}
+          height={height}
+          viewBox={`${[0, 0, width, height]}`}
+          onMouseMove={(e) => {
+            console.log("e.pageX", e.pageX);
+            setState({
+              type: "mousemove",
+              xpos: e.pageX,
+              ...state,
+            });
+          }}
+        >
+          {state.paths}
+          {tooltipLine}
         </svg>
       );
   }
