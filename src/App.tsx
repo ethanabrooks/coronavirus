@@ -32,7 +32,7 @@ const Chart: React.FC<{ rawData: RawEntry[] }> = ({ rawData }) => {
     const listener = () =>
       setWindow({ width: window.innerWidth, height: window.innerHeight });
     window.addEventListener("resize", listener);
-    return window.removeEventListener("resize", listener);
+    return () => window.removeEventListener("resize", listener);
   }, []);
 
   const parsedData = React.useMemo(
