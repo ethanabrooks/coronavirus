@@ -5,7 +5,8 @@ import { isPresent } from "ts-is-present";
 
 type RawEntry = { state: string; positive: number; dateChecked: string };
 type Entry = { state: string; positive: number; dateChecked: number };
-type MousePos = { x: number; y: number };
+type XY = { x: number; y: number };
+type Extent = { min: XY; max: XY };
 
 const highlightColor = "#ff0079";
 const defaultColor = "#00b6c6";
@@ -18,18 +19,18 @@ function datediff(first: number, second: number): number {
 }
 
 const Chart: React.FC<{ rawData: RawEntry[] }> = ({ rawData }) => {
-  const [mouse, setMouse] = React.useState<MousePos | null>(null);
+  const [mouse, setMouse] = React.useState<XY | null>(null);
   const [highlightedState, setHighlightedState] = React.useState<string | null>(
     null
   );
-  const [{ width, height }, setExtent] = React.useState<{
+  const [{ width, height }, setWindow] = React.useState<{
     width: number;
     height: number;
   }>({ width: window.innerWidth, height: window.innerHeight });
 
   React.useEffect(() => {
     const listener = () =>
-      setExtent({ width: window.innerWidth, height: window.innerHeight });
+      setWindow({ width: window.innerWidth, height: window.innerHeight });
     window.addEventListener("resize", listener);
     return window.removeEventListener("resize", listener);
   }, []);
@@ -61,21 +62,24 @@ const Chart: React.FC<{ rawData: RawEntry[] }> = ({ rawData }) => {
         .sortBy((entries) => -(entries.last() as number)),
     [parsedData]
   );
-  const [left, right] = React.useMemo(
-    () => d3.extent(parsedData.toArray(), (d) => d.dateChecked) as number[],
-    [parsedData]
-  );
 
-  const [top, bottom] = React.useMemo(
-    () => d3.extent(parsedData.toArray(), (d) => d.positive) as number[],
-    [parsedData]
-  );
+  const extent: Extent = React.useMemo(() => {
+    const [left, right] = d3.extent(
+      parsedData.toArray(),
+      (d) => d.dateChecked
+    ) as number[];
+    const [top, bottom] = d3.extent(
+      parsedData.toArray(),
+      (d) => d.positive
+    ) as number[];
+    return { min: { x: left, y: top }, max: { x: right, y: bottom } };
+  }, [parsedData]);
 
-  const datesToStates = React.useMemo(
+  const daysToStates = React.useMemo(
     () =>
       parsedData
         .groupBy((e) => {
-          return datediff(left, e.dateChecked);
+          return datediff(extent.min.x, e.dateChecked);
         })
         .map((entries) =>
           entries
@@ -87,23 +91,23 @@ const Chart: React.FC<{ rawData: RawEntry[] }> = ({ rawData }) => {
         )
         .toOrderedMap()
         .sortBy((entries) => -(entries.last() as number)),
-    [parsedData, left]
+    [parsedData, extent]
   );
 
   const [minDay, maxDay] = React.useMemo(
-    () => d3.extent(datesToStates.keySeq().toArray(), (d) => d) as number[],
-    [datesToStates]
+    () => d3.extent(daysToStates.keySeq().toArray(), (d) => d) as number[],
+    [daysToStates]
   );
 
   const paths = React.useMemo(() => {
     const x = d3
       .scaleLinear()
-      .domain([left, right])
+      .domain([extent.min.x, extent.max.x])
       .range([0, width - margin.right]);
 
     const y = d3
       .scaleLinear()
-      .domain([top, bottom])
+      .domain([extent.min.y, extent.max.y])
       .range([height - margin.bottom, 0]);
 
     const line = d3
@@ -114,7 +118,9 @@ const Chart: React.FC<{ rawData: RawEntry[] }> = ({ rawData }) => {
     return statesToDates
       .map((d, state) => {
         const isHighlighted = state === highlightedState;
-        const a = List(d.entries()).push([right, 0]).push([left, 0]);
+        const a = List(d.entries())
+          .push([extent.max.x, 0])
+          .push([extent.min.x, 0]);
 
         return (
           <React.Fragment key={state}>
@@ -139,16 +145,7 @@ const Chart: React.FC<{ rawData: RawEntry[] }> = ({ rawData }) => {
         );
       })
       .toArray();
-  }, [
-    highlightedState,
-    statesToDates,
-    left,
-    right,
-    bottom,
-    height,
-    top,
-    width,
-  ]);
+  }, [highlightedState, statesToDates, extent, height, width]);
 
   let tooltipPath: JSX.Element | null = null;
   let tooltip: JSX.Element | null = null;
@@ -179,7 +176,7 @@ const Chart: React.FC<{ rawData: RawEntry[] }> = ({ rawData }) => {
     );
     tooltip = (
       <text style={{ fontSize: 10 }}>
-        {datesToStates
+        {daysToStates
           .get(xpos)
           ?.map((d, state) => {
             return (
