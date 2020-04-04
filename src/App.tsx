@@ -149,7 +149,7 @@ const Chart: React.FC<{ rawData: RawEntry[] }> = ({ rawData }) => {
 
   let tooltipPath: JSX.Element | null = null;
   let tooltip: JSX.Element | null = null;
-  if (mouse != null) {
+  if (mouse != null && mouse.x < width - margin.right) {
     const line = d3
       .line()
       .x(([a, _]) => a)
