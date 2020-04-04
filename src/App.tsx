@@ -180,8 +180,9 @@ const Chart: React.FC<{ rawData: RawEntry[] }> = ({ rawData }) => {
         {daysToStates
           .get(xpos)
           ?.map((d, state) => {
+            const fill = state === highlightedState ? highlightColor : "black";
             return (
-              <tspan x={mouse.x + 30} dy="1.2em">
+              <tspan x={mouse.x + 30} dy={12} fill={fill}>
                 {state}: {d}
               </tspan>
             );
