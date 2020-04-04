@@ -1,11 +1,7 @@
 import React from "react";
 import * as d3 from "d3";
-import { Collection, List, OrderedMap } from "immutable";
+import { Collection, List } from "immutable";
 import { isPresent } from "ts-is-present";
-
-interface IProps {
-  data?: number[];
-}
 
 type RawEntry = { state: string; positive: number; dateChecked: string };
 type Entry = { state: string; positive: number; dateChecked: number };
@@ -25,15 +21,16 @@ const Chart: React.FC<{ rawData: RawEntry[] }> = ({ rawData }) => {
   }>({ width: window.innerWidth, height: window.innerHeight });
 
   React.useEffect(() => {
-    window.addEventListener("resize", () =>
-      setExtent({ width: window.innerWidth, height: window.innerHeight })
-    );
+    const listener = () =>
+      setExtent({ width: window.innerWidth, height: window.innerHeight });
+    window.addEventListener("resize", listener);
+    return window.removeEventListener("resize", listener);
   }, []);
 
   const parsedData = React.useMemo(
     () =>
       List(rawData)
-        .map((e: RawEntry): null | Entry => {
+        .map((e) => {
           const date = new Date(e.dateChecked).valueOf();
           return isNaN(date) ? null : { ...e, dateChecked: date };
         })
@@ -44,34 +41,29 @@ const Chart: React.FC<{ rawData: RawEntry[] }> = ({ rawData }) => {
   const data = React.useMemo(
     () =>
       parsedData
-        .groupBy((e: Entry): string => e.state)
-        .map(
-          (entries: Collection<number, Entry>): OrderedMap<number, number> =>
-            entries
-              .groupBy((e: Entry) => e.dateChecked)
-              .map(
-                (entries: Collection<number, Entry>): Entry => entries.first()
-              )
-              .map((e: Entry): number => e.positive)
-              .toOrderedMap()
-              .sortBy((v, k) => k)
+        .groupBy((e) => e.state)
+        .map((entries) =>
+          entries
+            .groupBy((e) => e.dateChecked)
+            .map((entries: Collection<number, Entry>): Entry => entries.first())
+            .map((e) => e.positive)
+            .toOrderedMap()
+            .sortBy((_, k) => k)
         )
         .toOrderedMap()
-        .sortBy(
-          (entries: OrderedMap<number, number>) => -(entries.last() as number)
-        ),
+        .sortBy((entries) => -(entries.last() as number)),
     [parsedData]
   );
 
   const paths = React.useMemo(() => {
     const [left, right] = d3.extent(
       parsedData.toArray(),
-      (d: Entry): number => d.dateChecked
+      (d) => d.dateChecked
     ) as number[];
 
     const [top, bottom] = d3.extent(
       parsedData.toArray(),
-      (d: Entry): number => d.positive
+      (d) => d.positive
     ) as number[];
 
     const x = d3
@@ -90,14 +82,12 @@ const Chart: React.FC<{ rawData: RawEntry[] }> = ({ rawData }) => {
       .y(([_, p]) => y(p));
 
     return data
-      .map((d: OrderedMap<number, number>, s: string) => {
-        const isHighlighted = s === highlightedState;
-        const a: List<[number, number]> = List(d.entries())
-          .push([right, 0])
-          .push([left, 0]);
+      .map((d, state) => {
+        const isHighlighted = state === highlightedState;
+        const a = List(d.entries()).push([right, 0]).push([left, 0]);
 
         return (
-          <React.Fragment key={s}>
+          <React.Fragment key={state}>
             <path
               fill="none"
               stroke={isHighlighted ? highlightColor : "none"}
@@ -108,14 +98,12 @@ const Chart: React.FC<{ rawData: RawEntry[] }> = ({ rawData }) => {
               fill={defaultColor}
               d={`${line(a.toArray())}`}
               opacity={isHighlighted ? 0.7 : 0.2}
-              onMouseEnter={(e) => {
-                setHighlightedState(s);
-              }}
-              onMouseLeave={(e) => {
+              onMouseEnter={() => setHighlightedState(state)}
+              onMouseLeave={() =>
                 setHighlightedState((oldState) =>
-                  oldState === s ? null : oldState
-                );
-              }}
+                  oldState === state ? null : oldState
+                )
+              }
             />
           </React.Fragment>
         );
@@ -125,7 +113,7 @@ const Chart: React.FC<{ rawData: RawEntry[] }> = ({ rawData }) => {
       .toArray();
   }, [highlightedState, data, parsedData, width, height]);
 
-  let tooltipLine = null;
+  let tooltipLine: JSX.Element | null = null;
   if (mouseX != null) {
     const line2 = d3
       .line()
@@ -168,8 +156,7 @@ type State =
       rawData: RawEntry[];
     };
 
-/* Component */
-export const App = (props: IProps) => {
+const App: React.FC<{}> = () => {
   const [state, setState] = React.useState<State>({ type: "loading" });
 
   React.useEffect(() => {
@@ -199,7 +186,6 @@ export const App = (props: IProps) => {
   }
 };
 
-/* App */
 export default function () {
   return (
     <div className="my-app">
