@@ -115,7 +115,7 @@ export const App = (props: IProps) => {
           <path
             fill="none"
             stroke={highlighted ? highlightColor : "none"}
-            d={`${[0, height]}`}
+            d={`${line(d.toArray())}`}
             opacity={highlighted ? 0.7 : 0.2}
           />
         );
