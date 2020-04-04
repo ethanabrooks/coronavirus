@@ -166,7 +166,8 @@ const Chart: React.FC<{ rawData: RawEntry[] }> = ({ rawData }) => {
     tooltipPath = (
       <path
         fill="none"
-        stroke={defaultColor}
+        stroke={"black"}
+        strokeWidth={0.15}
         d={`${line([
           [dayToPage(xpos), 0],
           [dayToPage(xpos), height],
