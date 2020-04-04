@@ -148,15 +148,12 @@ const Chart: React.FC<{ rawData: RawEntry[] }> = ({ rawData }) => {
   );
 };
 
-type State =
-  | { type: "loading" }
-  | { type: "error"; error: any }
-  | {
-      type: "loaded";
-      rawData: RawEntry[];
-    };
-
 const App: React.FC<{}> = () => {
+  type State =
+    | { type: "loading" }
+    | { type: "error"; error: any }
+    | { type: "loaded"; rawData: RawEntry[] };
+
   const [state, setState] = React.useState<State>({ type: "loading" });
 
   React.useEffect(() => {
