@@ -19,6 +19,13 @@ function datediff(first: number, second: number): number {
 }
 
 const Chart: React.FC<{ rawData: RawEntry[] }> = ({ rawData }) => {
+  React.useEffect(() => {
+    const listener = () =>
+      setWindow({ width: window.innerWidth, height: window.innerHeight });
+    window.addEventListener("resize", listener);
+    return () => window.removeEventListener("resize", listener);
+  }, []);
+
   const [mousePos, setMousePos] = React.useState<XY | null>(null);
   const [highlightedState, setHighlightedState] = React.useState<string | null>(
     null
@@ -28,12 +35,10 @@ const Chart: React.FC<{ rawData: RawEntry[] }> = ({ rawData }) => {
     height: number;
   }>({ width: window.innerWidth, height: window.innerHeight });
 
-  React.useEffect(() => {
-    const listener = () =>
-      setWindow({ width: window.innerWidth, height: window.innerHeight });
-    window.addEventListener("resize", listener);
-    return () => window.removeEventListener("resize", listener);
-  }, []);
+  const [selecting, setSelecting] = React.useState<null | {
+    from: XY;
+    to: null | XY;
+  }>(null);
 
   const parsedData = React.useMemo(
     () =>
@@ -67,17 +72,20 @@ const Chart: React.FC<{ rawData: RawEntry[] }> = ({ rawData }) => {
     Set(statesToDates.keys())
   );
 
-  const extent: Extent = React.useMemo(() => {
-    const [left, right] = d3.extent(
-      parsedData.filter((e) => included.has(e.state)).toArray(),
-      (d) => d.dateChecked
-    ) as number[];
-    const [top, bottom] = d3.extent(
-      parsedData.filter((e) => included.has(e.state)).toArray(),
-      (d) => d.positive
-    ) as number[];
-    return { min: { x: left, y: top }, max: { x: right, y: bottom } };
-  }, [parsedData, included]);
+  const [maybeExtent, setExtent] = React.useState<Extent | null>(null);
+  const [left, right] = d3.extent(
+    parsedData.filter((e) => included.has(e.state)).toArray(),
+    (d) => d.dateChecked
+  ) as number[];
+  const [top, bottom] = d3.extent(
+    parsedData.filter((e) => included.has(e.state)).toArray(),
+    (d) => d.positive
+  ) as number[];
+  const unzoomedExtent = {
+    min: { x: left, y: top },
+    max: { x: right, y: bottom },
+  };
+  const extent = maybeExtent ? maybeExtent : unzoomedExtent;
 
   const daysToStates = React.useMemo(
     () =>
@@ -124,8 +132,8 @@ const Chart: React.FC<{ rawData: RawEntry[] }> = ({ rawData }) => {
       .map((d, s) => {
         const isHighlighted = s === highlightedState;
         const a = List(d.entries())
-          .push([extent.max.x, 0])
-          .push([extent.min.x, 0]);
+          .push([unzoomedExtent.max.x, 0])
+          .push([unzoomedExtent.min.x, 0]);
 
         return (
           <React.Fragment key={s}>
@@ -151,7 +159,15 @@ const Chart: React.FC<{ rawData: RawEntry[] }> = ({ rawData }) => {
         );
       })
       .toArray();
-  }, [highlightedState, statesToDates, extent, height, width, included]);
+  }, [
+    highlightedState,
+    statesToDates,
+    extent,
+    unzoomedExtent,
+    height,
+    width,
+    included,
+  ]);
 
   let tooltipPath: JSX.Element | null = null;
   let tooltip: JSX.Element | null = null;
@@ -232,6 +248,7 @@ const Chart: React.FC<{ rawData: RawEntry[] }> = ({ rawData }) => {
                       ? Set(statesToDates.keys())
                       : Set.of(s)
                   );
+                  setExtent(null);
                 }}
               >
                 {s}
@@ -245,13 +262,10 @@ const Chart: React.FC<{ rawData: RawEntry[] }> = ({ rawData }) => {
     [included, statesToDates]
   );
 
-  const [selecting, setSelecting] = React.useState<null | { from: XY; to: XY }>(
-    null
-  );
-
   let selectionArea: null | JSX.Element = null;
-  if (selecting) {
-    const extent = {
+  let rectExtent: null | Extent = null;
+  if (selecting && selecting.to) {
+    rectExtent = {
       min: {
         x: Math.min(selecting.from.x, selecting.to.x),
         y: Math.min(selecting.from.y, selecting.to.y),
@@ -264,16 +278,26 @@ const Chart: React.FC<{ rawData: RawEntry[] }> = ({ rawData }) => {
     selectionArea = (
       <svg style={{ overflow: "visible" }}>
         <rect
-          x={extent.min.x}
-          y={extent.min.y}
-          width={extent.max.x - extent.min.x}
-          height={extent.max.y - extent.min.y}
+          x={rectExtent.min.x}
+          y={rectExtent.min.y}
+          width={rectExtent.max.x - rectExtent.min.x}
+          height={rectExtent.max.y - rectExtent.min.y}
           fill="black"
           opacity={0.3}
         />
       </svg>
     );
   }
+
+  const xInverse = d3
+    .scaleLinear()
+    .domain([0, width - margin.right])
+    .range([extent.min.x, extent.max.x]);
+
+  const yInverse = d3
+    .scaleLinear()
+    .domain([0, height - margin.bottom])
+    .range([extent.max.y, extent.min.y]);
 
   return (
     <div>
@@ -284,16 +308,15 @@ const Chart: React.FC<{ rawData: RawEntry[] }> = ({ rawData }) => {
         style={{ float: "left", width: width - margin.right }}
         onDoubleClick={() => {
           setIncluded(Set(statesToDates.keys()));
+          setExtent(null);
+          setSelecting(null);
         }}
+        onClick={() => setSelecting(null)}
         onMouseDown={(e) => {
-          console.log("down");
           setSelecting({
             from: { x: e.pageX, y: e.pageY },
-            to: { x: e.pageX, y: e.pageY },
+            to: null,
           });
-        }}
-        onMouseUp={(e) => {
-          setSelecting(null);
         }}
         onMouseMove={(e) => {
           if (selecting) {
@@ -303,13 +326,27 @@ const Chart: React.FC<{ rawData: RawEntry[] }> = ({ rawData }) => {
             });
           }
         }}
+        onMouseUp={(e) => {
+          if (selecting && rectExtent) {
+            setExtent({
+              min: {
+                x: xInverse(rectExtent.min.x),
+                y: yInverse(rectExtent.max.y),
+              },
+              max: {
+                x: xInverse(rectExtent.max.x),
+                y: yInverse(rectExtent.min.y),
+              },
+            });
+          } else {
+            setExtent(null);
+            setSelecting(null);
+          }
+        }}
       >
         <svg
           className="d3-component"
-          style={{ overflow: "visible" }}
-          width={width}
-          height={height}
-          viewBox={`${[0, 0, width, height]}`}
+          viewBox={`${[0, 0, width - margin.right, height - margin.bottom]}`}
           onMouseMove={(e) => setMousePos({ x: e.pageX, y: e.pageY })}
         >
           {paths}
