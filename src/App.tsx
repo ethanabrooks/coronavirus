@@ -245,12 +245,63 @@ const Chart: React.FC<{ rawData: RawEntry[] }> = ({ rawData }) => {
     [included, statesToDates]
   );
 
+  const [selecting, setSelecting] = React.useState<null | { from: XY; to: XY }>(
+    null
+  );
+
+  let selectionArea: null | JSX.Element = null;
+  if (selecting) {
+    const extent = {
+      min: {
+        x: Math.min(selecting.from.x, selecting.to.x),
+        y: Math.min(selecting.from.y, selecting.to.y),
+      },
+      max: {
+        x: Math.max(selecting.from.x, selecting.to.x),
+        y: Math.max(selecting.from.y, selecting.to.y),
+      },
+    };
+    selectionArea = (
+      <svg style={{ overflow: "visible" }}>
+        <rect
+          x={extent.min.x}
+          y={extent.min.y}
+          width={extent.max.x - extent.min.x}
+          height={extent.max.y - extent.min.y}
+          fill="black"
+          opacity={0.3}
+        />
+      </svg>
+    );
+  }
+
   return (
     <div>
+      <div style={{ float: "right", width: width, height: 0 }}>
+        {selectionArea}
+      </div>
       <div
         style={{ float: "left", width: width - margin.right }}
         onDoubleClick={() => {
           setIncluded(Set(statesToDates.keys()));
+        }}
+        onMouseDown={(e) => {
+          console.log("down");
+          setSelecting({
+            from: { x: e.pageX, y: e.pageY },
+            to: { x: e.pageX, y: e.pageY },
+          });
+        }}
+        onMouseUp={(e) => {
+          setSelecting(null);
+        }}
+        onMouseMove={(e) => {
+          if (selecting) {
+            setSelecting({
+              ...selecting,
+              to: { x: e.pageX, y: e.pageY },
+            });
+          }
         }}
       >
         <svg
