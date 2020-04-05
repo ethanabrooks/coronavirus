@@ -73,18 +73,20 @@ const Chart: React.FC<{ rawData: RawEntry[] }> = ({ rawData }) => {
   );
 
   const [maybeExtent, setExtent] = React.useState<Extent | null>(null);
-  const [left, right] = d3.extent(
-    parsedData.filter((e) => included.has(e.state)).toArray(),
-    (d) => d.dateChecked
-  ) as number[];
-  const [top, bottom] = d3.extent(
-    parsedData.filter((e) => included.has(e.state)).toArray(),
-    (d) => d.positive
-  ) as number[];
-  const unzoomedExtent = {
-    min: { x: left, y: top },
-    max: { x: right, y: bottom },
-  };
+  const unzoomedExtent = React.useMemo(() => {
+    const [left, right] = d3.extent(
+      parsedData.filter((e) => included.has(e.state)).toArray(),
+      (d) => d.dateChecked
+    ) as number[];
+    const [top, bottom] = d3.extent(
+      parsedData.filter((e) => included.has(e.state)).toArray(),
+      (d) => d.positive
+    ) as number[];
+    return {
+      min: { x: left, y: top },
+      max: { x: right, y: bottom },
+    };
+  }, [parsedData, included]);
   const extent = maybeExtent ? maybeExtent : unzoomedExtent;
 
   const daysToStates = React.useMemo(
