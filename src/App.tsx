@@ -1,6 +1,6 @@
 import React from "react";
 import * as d3 from "d3";
-import { Collection, List } from "immutable";
+import { Collection, List, Set } from "immutable";
 import { isPresent } from "ts-is-present";
 
 type RawEntry = { state: string; positive: number; dateChecked: string };
@@ -19,7 +19,7 @@ function datediff(first: number, second: number): number {
 }
 
 const Chart: React.FC<{ rawData: RawEntry[] }> = ({ rawData }) => {
-  const [mouse, setMouse] = React.useState<XY | null>(null);
+  const [mousePos, setMousePos] = React.useState<XY | null>(null);
   const [highlightedState, setHighlightedState] = React.useState<string | null>(
     null
   );
@@ -63,17 +63,21 @@ const Chart: React.FC<{ rawData: RawEntry[] }> = ({ rawData }) => {
     [parsedData]
   );
 
+  const [included, setIncluded] = React.useState<Set<string>>(
+    Set(statesToDates.keys())
+  );
+
   const extent: Extent = React.useMemo(() => {
     const [left, right] = d3.extent(
-      parsedData.toArray(),
+      parsedData.filter((e) => included.has(e.state)).toArray(),
       (d) => d.dateChecked
     ) as number[];
     const [top, bottom] = d3.extent(
-      parsedData.toArray(),
+      parsedData.filter((e) => included.has(e.state)).toArray(),
       (d) => d.positive
     ) as number[];
     return { min: { x: left, y: top }, max: { x: right, y: bottom } };
-  }, [parsedData]);
+  }, [parsedData, included]);
 
   const daysToStates = React.useMemo(
     () =>
@@ -116,14 +120,15 @@ const Chart: React.FC<{ rawData: RawEntry[] }> = ({ rawData }) => {
       .y(([_, p]) => y(p));
 
     return statesToDates
-      .map((d, state) => {
-        const isHighlighted = state === highlightedState;
+      .filter((_, state) => included.has(state))
+      .map((d, s) => {
+        const isHighlighted = s === highlightedState;
         const a = List(d.entries())
           .push([extent.max.x, 0])
           .push([extent.min.x, 0]);
 
         return (
-          <React.Fragment key={state}>
+          <React.Fragment key={s}>
             <path
               fill="none"
               stroke={isHighlighted ? highlightColor : "none"}
@@ -134,22 +139,23 @@ const Chart: React.FC<{ rawData: RawEntry[] }> = ({ rawData }) => {
               fill={defaultColor}
               d={`${line(a.toArray())}`}
               opacity={isHighlighted ? 0.7 : 0.2}
-              onMouseEnter={() => setHighlightedState(state)}
+              onMouseEnter={() => setHighlightedState(s)}
               onMouseLeave={() =>
                 setHighlightedState((oldState) =>
-                  oldState === state ? null : oldState
+                  oldState === s ? null : oldState
                 )
               }
+              onClick={() => setIncluded(Set.of(s))}
             />
           </React.Fragment>
         );
       })
       .toArray();
-  }, [highlightedState, statesToDates, extent, height, width]);
+  }, [highlightedState, statesToDates, extent, height, width, included]);
 
   let tooltipPath: JSX.Element | null = null;
   let tooltip: JSX.Element | null = null;
-  if (mouse != null && mouse.x < width - margin.right) {
+  if (mousePos != null && mousePos.x < width - margin.right) {
     const line = d3
       .line()
       .x(([a, _]) => a)
@@ -162,7 +168,7 @@ const Chart: React.FC<{ rawData: RawEntry[] }> = ({ rawData }) => {
       .scaleLinear()
       .domain([minDay, maxDay])
       .range([0, width - margin.right]);
-    const xpos = Math.round(pageToDay(mouse.x));
+    const xpos = Math.round(pageToDay(mousePos.x));
     tooltipPath = (
       <path
         fill="none"
@@ -179,10 +185,19 @@ const Chart: React.FC<{ rawData: RawEntry[] }> = ({ rawData }) => {
       <text style={{ fontSize: 10 }}>
         {daysToStates
           .get(xpos)
-          ?.map((d, state) => {
+          ?.filter((_, state) => included.has(state))
+          .map((d, state) => {
             const fill = state === highlightedState ? highlightColor : "black";
             return (
-              <tspan x={mouse.x + 30} dy={12} fill={fill}>
+              <tspan
+                x={
+                  mousePos.x + 80 < width - margin.right
+                    ? mousePos.x + 30
+                    : mousePos.x - 60
+                }
+                dy={12}
+                fill={fill}
+              >
                 {state}: {d}
               </tspan>
             );
@@ -194,18 +209,62 @@ const Chart: React.FC<{ rawData: RawEntry[] }> = ({ rawData }) => {
   }
 
   return (
-    <svg
-      className="d3-component"
-      style={{ overflow: "visible" }}
-      width={width}
-      height={height}
-      viewBox={`${[0, 0, width, height]}`}
-      onMouseMove={(e) => setMouse({ x: e.pageX, y: e.pageY })}
-    >
-      {paths}
-      {tooltipPath}
-      {tooltip}
-    </svg>
+    <div>
+      <div
+        style={{ float: "left", width: width - margin.right }}
+        onDoubleClick={() => {
+          setIncluded(Set(statesToDates.keys()));
+        }}
+      >
+        <svg
+          className="d3-component"
+          style={{ overflow: "visible" }}
+          width={width}
+          height={height}
+          viewBox={`${[0, 0, width, height]}`}
+          onMouseMove={(e) => setMousePos({ x: e.pageX, y: e.pageY })}
+        >
+          {paths}
+          {tooltipPath}
+          {tooltip}
+        </svg>
+      </div>
+      <div style={{ float: "left", width: margin.right }}>
+        <svg style={{ overflow: "visible" }}>
+          <text style={{ fontSize: 10, userSelect: "none" }}>
+            {statesToDates
+              .sortBy((_, k) => k)
+              .map((d, s) => {
+                const isIncluded = included.has(s);
+                const fill = isIncluded ? "black" : "lightgrey";
+                return (
+                  <tspan
+                    x={10}
+                    dy={12.8}
+                    fill={fill}
+                    onClick={() => {
+                      setIncluded(
+                        isIncluded ? included.delete(s) : included.add(s)
+                      );
+                    }}
+                    onDoubleClick={() => {
+                      setIncluded(
+                        included.size === 1 && included.has(s)
+                          ? Set(statesToDates.keys())
+                          : Set.of(s)
+                      );
+                    }}
+                  >
+                    {s}
+                  </tspan>
+                );
+              })
+              .valueSeq()
+              .toArray()}
+          </text>
+        </svg>
+      </div>
+    </div>
   );
 };
 
