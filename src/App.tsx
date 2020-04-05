@@ -182,7 +182,7 @@ const Chart: React.FC<{ rawData: RawEntry[] }> = ({ rawData }) => {
       />
     );
     tooltip = (
-      <text style={{ fontSize: 10 }}>
+      <text style={{ fontSize: 10, userSelect: "none" }}>
         {daysToStates
           .get(xpos)
           ?.filter((_, state) => included.has(state))
@@ -208,6 +208,43 @@ const Chart: React.FC<{ rawData: RawEntry[] }> = ({ rawData }) => {
     );
   }
 
+  const stateList = React.useMemo(
+    () => (
+      <text style={{ fontSize: 10, userSelect: "none" }}>
+        {statesToDates
+          .sortBy((_, k) => k)
+          .map((d, s) => {
+            const isIncluded = included.has(s);
+            const fill = isIncluded ? "black" : "lightgrey";
+            return (
+              <tspan
+                x={10}
+                dy={12.8}
+                fill={fill}
+                onClick={() => {
+                  setIncluded(
+                    isIncluded ? included.delete(s) : included.add(s)
+                  );
+                }}
+                onDoubleClick={() => {
+                  setIncluded(
+                    included.size === 1 && included.has(s)
+                      ? Set(statesToDates.keys())
+                      : Set.of(s)
+                  );
+                }}
+              >
+                {s}
+              </tspan>
+            );
+          })
+          .valueSeq()
+          .toArray()}
+      </text>
+    ),
+    [included, statesToDates]
+  );
+
   return (
     <div>
       <div
@@ -230,39 +267,7 @@ const Chart: React.FC<{ rawData: RawEntry[] }> = ({ rawData }) => {
         </svg>
       </div>
       <div style={{ float: "left", width: margin.right }}>
-        <svg style={{ overflow: "visible" }}>
-          <text style={{ fontSize: 10, userSelect: "none" }}>
-            {statesToDates
-              .sortBy((_, k) => k)
-              .map((d, s) => {
-                const isIncluded = included.has(s);
-                const fill = isIncluded ? "black" : "lightgrey";
-                return (
-                  <tspan
-                    x={10}
-                    dy={12.8}
-                    fill={fill}
-                    onClick={() => {
-                      setIncluded(
-                        isIncluded ? included.delete(s) : included.add(s)
-                      );
-                    }}
-                    onDoubleClick={() => {
-                      setIncluded(
-                        included.size === 1 && included.has(s)
-                          ? Set(statesToDates.keys())
-                          : Set.of(s)
-                      );
-                    }}
-                  >
-                    {s}
-                  </tspan>
-                );
-              })
-              .valueSeq()
-              .toArray()}
-          </text>
-        </svg>
+        <svg style={{ overflow: "visible" }}>{stateList}</svg>
       </div>
     </div>
   );
