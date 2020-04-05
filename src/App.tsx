@@ -72,8 +72,24 @@ const Chart: React.FC<{ rawData: RawEntry[] }> = ({ rawData }) => {
     Set(statesToDates.keys())
   );
 
-  const [maybeExtent, setExtent] = React.useState<Extent | null>(null);
-  const unzoomedExtent = React.useMemo(() => {
+  const initialExtent = React.useMemo(() => {
+    const [left, right] = d3.extent(
+      parsedData.toArray(),
+      (d) => d.dateChecked
+    ) as number[];
+    const [top, bottom] = d3.extent(
+      parsedData.filter((e) => included.has(e.state)).toArray(),
+      (d) => d.positive
+    ) as number[];
+    return {
+      min: { x: left, y: top },
+      max: { x: right, y: bottom },
+    };
+  }, [parsedData, included]);
+
+  const [zoom, setZoom] = React.useState<Extent | null>(null);
+
+  const includedExtent = React.useMemo(() => {
     const [left, right] = d3.extent(
       parsedData.filter((e) => included.has(e.state)).toArray(),
       (d) => d.dateChecked
@@ -87,13 +103,14 @@ const Chart: React.FC<{ rawData: RawEntry[] }> = ({ rawData }) => {
       max: { x: right, y: bottom },
     };
   }, [parsedData, included]);
-  const extent = maybeExtent ? maybeExtent : unzoomedExtent;
+
+  const extent = zoom ? zoom : includedExtent;
 
   const daysToStates = React.useMemo(
     () =>
       parsedData
         .groupBy((e) => {
-          return datediff(extent.min.x, e.dateChecked);
+          return datediff(initialExtent.min.x, e.dateChecked);
         })
         .map((entries) =>
           entries
@@ -105,7 +122,7 @@ const Chart: React.FC<{ rawData: RawEntry[] }> = ({ rawData }) => {
         )
         .toOrderedMap()
         .sortBy((entries) => -(entries.last() as number)),
-    [parsedData, extent]
+    [parsedData, initialExtent]
   );
 
   const [minDay, maxDay] = React.useMemo(
@@ -134,8 +151,8 @@ const Chart: React.FC<{ rawData: RawEntry[] }> = ({ rawData }) => {
       .map((d, s) => {
         const isHighlighted = s === highlightedState;
         const a = List(d.entries())
-          .push([unzoomedExtent.max.x, 0])
-          .push([unzoomedExtent.min.x, 0]);
+          .push([includedExtent.max.x, 0])
+          .push([includedExtent.min.x, 0]);
 
         return (
           <React.Fragment key={s}>
@@ -162,10 +179,10 @@ const Chart: React.FC<{ rawData: RawEntry[] }> = ({ rawData }) => {
       })
       .toArray();
   }, [
+    extent,
     highlightedState,
     statesToDates,
-    extent,
-    unzoomedExtent,
+    includedExtent,
     height,
     width,
     included,
@@ -250,7 +267,7 @@ const Chart: React.FC<{ rawData: RawEntry[] }> = ({ rawData }) => {
                       ? Set(statesToDates.keys())
                       : Set.of(s)
                   );
-                  setExtent(null);
+                  setZoom(null);
                 }}
               >
                 {s}
@@ -310,10 +327,11 @@ const Chart: React.FC<{ rawData: RawEntry[] }> = ({ rawData }) => {
         style={{ float: "left", width: width - margin.right }}
         onDoubleClick={() => {
           setIncluded(Set(statesToDates.keys()));
-          setExtent(null);
+          setZoom(null);
           setSelecting(null);
         }}
         onClick={() => setSelecting(null)}
+        onMouseLeave={() => setSelecting(null)}
         onMouseDown={(e) => {
           setSelecting({
             from: { x: e.pageX, y: e.pageY },
@@ -330,18 +348,23 @@ const Chart: React.FC<{ rawData: RawEntry[] }> = ({ rawData }) => {
         }}
         onMouseUp={(e) => {
           if (selecting && rectExtent) {
-            setExtent({
-              min: {
-                x: xInverse(rectExtent.min.x),
-                y: yInverse(rectExtent.max.y),
-              },
-              max: {
-                x: xInverse(rectExtent.max.x),
-                y: yInverse(rectExtent.min.y),
-              },
-            });
+            const rectSize =
+              (rectExtent.max.x - rectExtent.min.x) *
+              (rectExtent.max.y - rectExtent.min.y);
+            if (rectSize > 50) {
+              setZoom({
+                min: {
+                  x: xInverse(rectExtent.min.x),
+                  y: yInverse(rectExtent.max.y),
+                },
+                max: {
+                  x: xInverse(rectExtent.max.x),
+                  y: yInverse(rectExtent.min.y),
+                },
+              });
+            }
           } else {
-            setExtent(null);
+            setZoom(null);
             setSelecting(null);
           }
         }}
