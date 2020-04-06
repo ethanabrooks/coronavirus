@@ -2,11 +2,18 @@ import React from "react";
 import * as d3 from "d3";
 import { Collection, List, Set } from "immutable";
 import { isPresent } from "ts-is-present";
+import { useSpring } from "react-spring";
 
 type RawEntry = { state: string; positive: number; dateChecked: string };
 type Entry = { state: string; positive: number; dateChecked: number };
 type XY = { x: number; y: number };
 type Extent = { min: XY; max: XY };
+type AnimatedExtent = {
+  minX: number;
+  minY: number;
+  maxX: number;
+  maxY: number;
+};
 
 const highlightColor = "#ff0079";
 const defaultColor = "#00b6c6";
@@ -104,7 +111,22 @@ const Chart: React.FC<{ rawData: RawEntry[] }> = ({ rawData }) => {
     };
   }, [parsedData, included]);
 
-  const extent = zoom ? zoom : includedExtent;
+  const extent = useSpring(
+    zoom
+      ? {
+          minX: zoom.min.x,
+          minY: zoom.min.y,
+          maxX: zoom.max.x,
+          maxY: zoom.max.y,
+        }
+      : {
+          minX: includedExtent.min.x,
+          minY: includedExtent.min.y,
+          maxX: includedExtent.max.x,
+          maxY: includedExtent.max.y,
+        }
+  );
+  console.log(extent);
 
   const daysToStates = React.useMemo(
     () =>
@@ -133,12 +155,12 @@ const Chart: React.FC<{ rawData: RawEntry[] }> = ({ rawData }) => {
   const paths = React.useMemo(() => {
     const x = d3
       .scaleLinear()
-      .domain([extent.min.x, extent.max.x])
+      .domain([extent.minX, extent.maxX])
       .range([0, width - margin.right]);
 
     const y = d3
       .scaleLinear()
-      .domain([extent.min.y, extent.max.y])
+      .domain([extent.minY, extent.maxY])
       .range([height - margin.bottom, 0]);
 
     const line = d3
@@ -311,12 +333,12 @@ const Chart: React.FC<{ rawData: RawEntry[] }> = ({ rawData }) => {
   const xInverse = d3
     .scaleLinear()
     .domain([0, width - margin.right])
-    .range([extent.min.x, extent.max.x]);
+    .range([extent.minX, extent.maxX]);
 
   const yInverse = d3
     .scaleLinear()
     .domain([0, height - margin.bottom])
-    .range([extent.max.y, extent.min.y]);
+    .range([extent.maxY, extent.minY]);
 
   return (
     <div>
