@@ -324,7 +324,17 @@ const Chart: React.FC<{ rawData: RawEntry[] }> = ({ rawData }) => {
     .domain([0, height - margin.bottom])
     .range([extent.max.y, extent.min.y]);
 
-  //const flattenExtent = (e: Extent) => {};
+  const flattenExtent = (e: Extent): FlatExtent => ({
+    minX: e.min.x,
+    maxX: e.max.x,
+    minY: e.min.y,
+    maxY: e.max.y,
+  });
+
+  const unflattenExtent = (fe: FlatExtent): Extent => ({
+    min: { x: fe.minX, y: fe.minY },
+    max: { x: fe.maxX, y: fe.maxY },
+  });
 
   return (
     <div>
@@ -377,30 +387,8 @@ const Chart: React.FC<{ rawData: RawEntry[] }> = ({ rawData }) => {
           }
         }}
       >
-        <Spring
-          from={{
-            minX: includedExtent.min.x,
-            maxX: includedExtent.max.x,
-            minY: includedExtent.min.y,
-            maxY: includedExtent.max.y,
-          }}
-          to={
-            zoom
-              ? {
-                  minX: zoom.min.x,
-                  maxX: zoom.max.x,
-                  minY: zoom.min.y,
-                  maxY: zoom.max.y,
-                }
-              : {
-                  minX: includedExtent.min.x,
-                  maxX: includedExtent.max.x,
-                  minY: includedExtent.min.y,
-                  maxY: includedExtent.max.y,
-                }
-          }
-        >
-          {(ext) => {
+        <Spring to={zoom ? flattenExtent(zoom) : flattenExtent(includedExtent)}>
+          {(flatExtent: FlatExtent) => {
             return (
               <svg
                 className="d3-component"
@@ -412,10 +400,7 @@ const Chart: React.FC<{ rawData: RawEntry[] }> = ({ rawData }) => {
                 ]}`}
                 onMouseMove={(e) => setMousePos({ x: e.pageX, y: e.pageY })}
               >
-                {paths({
-                  min: { x: ext.minX, y: ext.minY },
-                  max: { x: ext.maxX, y: ext.maxY },
-                })}
+                {paths(unflattenExtent(flatExtent))}
                 {tooltipPath}
                 {tooltip}
               </svg>
