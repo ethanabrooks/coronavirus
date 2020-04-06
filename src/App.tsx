@@ -40,6 +40,8 @@ const Chart: React.FC<{ rawData: RawEntry[] }> = ({ rawData }) => {
     to: null | XY;
   }>(null);
 
+  const [zoom, setZoom] = React.useState<Extent | null>(null);
+
   const parsedData = React.useMemo(
     () =>
       List(rawData)
@@ -86,8 +88,6 @@ const Chart: React.FC<{ rawData: RawEntry[] }> = ({ rawData }) => {
       max: { x: right, y: bottom },
     };
   }, [parsedData, included]);
-
-  const [zoom, setZoom] = React.useState<Extent | null>(null);
 
   const includedExtent = React.useMemo(() => {
     const [left, right] = d3.extent(
@@ -157,12 +157,14 @@ const Chart: React.FC<{ rawData: RawEntry[] }> = ({ rawData }) => {
         return (
           <React.Fragment key={s}>
             <path
+              style={{ transition: "width 2s" }}
               fill="none"
               stroke={isHighlighted ? highlightColor : "none"}
               d={`${line(d.toArray())}`}
               opacity={isHighlighted ? 0.7 : 0.2}
             />
             <path
+              style={{ transition: "width 2s" }}
               fill={defaultColor}
               d={`${line(a.toArray())}`}
               opacity={isHighlighted ? 0.7 : 0.2}
@@ -220,11 +222,12 @@ const Chart: React.FC<{ rawData: RawEntry[] }> = ({ rawData }) => {
       <text style={{ fontSize: 10, userSelect: "none" }}>
         {daysToStates
           .get(xpos)
-          ?.filter((_, state) => included.has(state))
-          .map((d, state) => {
-            const fill = state === highlightedState ? highlightColor : "black";
+          ?.filter((_, s) => included.has(s))
+          .map((d, s) => {
+            const fill = s === highlightedState ? highlightColor : "black";
             return (
               <tspan
+                key={`${s}-tooltip`}
                 x={
                   mousePos.x + 80 < width - margin.right
                     ? mousePos.x + 30
@@ -233,7 +236,7 @@ const Chart: React.FC<{ rawData: RawEntry[] }> = ({ rawData }) => {
                 dy={12}
                 fill={fill}
               >
-                {state}: {d}
+                {s}: {d}
               </tspan>
             );
           })
@@ -253,6 +256,7 @@ const Chart: React.FC<{ rawData: RawEntry[] }> = ({ rawData }) => {
             const fill = isIncluded ? "black" : "lightgrey";
             return (
               <tspan
+                key={`${s}-toggle`}
                 x={10}
                 dy={12.8}
                 fill={fill}
@@ -262,11 +266,7 @@ const Chart: React.FC<{ rawData: RawEntry[] }> = ({ rawData }) => {
                   );
                 }}
                 onDoubleClick={() => {
-                  setIncluded(
-                    included.size === 1 && included.has(s)
-                      ? Set(statesToDates.keys())
-                      : Set.of(s)
-                  );
+                  setIncluded(Set.of(s));
                   setZoom(null);
                 }}
               >
