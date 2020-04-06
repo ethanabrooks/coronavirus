@@ -185,15 +185,7 @@ const Chart: React.FC<{ rawData: RawEntry[] }> = ({ rawData }) => {
         })
         .toArray();
     },
-    [
-      extent,
-      highlightedState,
-      statesToDates,
-      includedExtent,
-      height,
-      width,
-      included,
-    ]
+    [highlightedState, statesToDates, includedExtent, height, width, included]
   );
 
   let tooltipPath: JSX.Element | null = null;
@@ -268,7 +260,9 @@ const Chart: React.FC<{ rawData: RawEntry[] }> = ({ rawData }) => {
                 fill={fill}
                 onClick={() => {
                   setIncluded(
-                    isIncluded ? included.delete(s) : included.add(s)
+                    isIncluded && included.size > 1
+                      ? included.delete(s)
+                      : included.add(s)
                   );
                 }}
                 onDoubleClick={() => {
@@ -331,11 +325,6 @@ const Chart: React.FC<{ rawData: RawEntry[] }> = ({ rawData }) => {
     maxY: e.max.y,
   });
 
-  const unflattenExtent = (fe: FlatExtent): Extent => ({
-    min: { x: fe.minX, y: fe.minY },
-    max: { x: fe.maxX, y: fe.maxY },
-  });
-
   return (
     <div>
       <div style={{ float: "right", width: width, height: 0 }}>
@@ -387,7 +376,7 @@ const Chart: React.FC<{ rawData: RawEntry[] }> = ({ rawData }) => {
           }
         }}
       >
-        <Spring to={zoom ? flattenExtent(zoom) : flattenExtent(includedExtent)}>
+        <Spring to={flattenExtent(zoom ? zoom : includedExtent)}>
           {(flatExtent: FlatExtent) => {
             return (
               <svg
@@ -400,7 +389,10 @@ const Chart: React.FC<{ rawData: RawEntry[] }> = ({ rawData }) => {
                 ]}`}
                 onMouseMove={(e) => setMousePos({ x: e.pageX, y: e.pageY })}
               >
-                {paths(unflattenExtent(flatExtent))}
+                {paths({
+                  min: { x: flatExtent.minX, y: flatExtent.minY },
+                  max: { x: flatExtent.maxX, y: flatExtent.maxY },
+                })}
                 {tooltipPath}
                 {tooltip}
               </svg>
