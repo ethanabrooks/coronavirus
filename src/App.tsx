@@ -2,11 +2,13 @@ import React from "react";
 import * as d3 from "d3";
 import { Collection, List, Set } from "immutable";
 import { isPresent } from "ts-is-present";
+import { Spring } from "react-spring/renderprops";
 
 type RawEntry = { state: string; positive: number; dateChecked: string };
 type Entry = { state: string; positive: number; dateChecked: number };
 type XY = { x: number; y: number };
 type Extent = { min: XY; max: XY };
+type FlatExtent = { minX: number; minY: number; maxX: number; maxY: number };
 
 const highlightColor = "#ff0079";
 const defaultColor = "#00b6c6";
@@ -130,65 +132,69 @@ const Chart: React.FC<{ rawData: RawEntry[] }> = ({ rawData }) => {
     [daysToStates]
   );
 
-  const paths = React.useMemo(() => {
-    const x = d3
-      .scaleLinear()
-      .domain([extent.min.x, extent.max.x])
-      .range([0, width - margin.right]);
+  const paths = React.useMemo(
+    () => (extent) => {
+      console.log(extent);
+      const x = d3
+        .scaleLinear()
+        .domain([extent.min.x, extent.max.x])
+        .range([0, width - margin.right]);
 
-    const y = d3
-      .scaleLinear()
-      .domain([extent.min.y, extent.max.y])
-      .range([height - margin.bottom, 0]);
+      const y = d3
+        .scaleLinear()
+        .domain([extent.min.y, extent.max.y])
+        .range([height - margin.bottom, 0]);
 
-    const line = d3
-      .line()
-      .x(([d, _]) => x(d))
-      .y(([_, p]) => y(p));
+      const line = d3
+        .line()
+        .x(([d, _]) => x(d))
+        .y(([_, p]) => y(p));
 
-    return statesToDates
-      .filter((_, state) => included.has(state))
-      .map((d, s) => {
-        const isHighlighted = s === highlightedState;
-        const a = List(d.entries())
-          .push([includedExtent.max.x, 0])
-          .push([includedExtent.min.x, 0]);
+      return statesToDates
+        .filter((_, state) => included.has(state))
+        .map((d, s) => {
+          const isHighlighted = s === highlightedState;
+          const a = List(d.entries())
+            .push([includedExtent.max.x, 0])
+            .push([includedExtent.min.x, 0]);
 
-        return (
-          <React.Fragment key={s}>
-            <path
-              style={{ transition: "width 2s" }}
-              fill="none"
-              stroke={isHighlighted ? highlightColor : "none"}
-              d={`${line(d.toArray())}`}
-              opacity={isHighlighted ? 0.7 : 0.2}
-            />
-            <path
-              style={{ transition: "width 2s" }}
-              fill={defaultColor}
-              d={`${line(a.toArray())}`}
-              opacity={isHighlighted ? 0.7 : 0.2}
-              onMouseEnter={() => setHighlightedState(s)}
-              onMouseLeave={() =>
-                setHighlightedState((oldState) =>
-                  oldState === s ? null : oldState
-                )
-              }
-              onClick={() => setIncluded(Set.of(s))}
-            />
-          </React.Fragment>
-        );
-      })
-      .toArray();
-  }, [
-    extent,
-    highlightedState,
-    statesToDates,
-    includedExtent,
-    height,
-    width,
-    included,
-  ]);
+          return (
+            <React.Fragment key={s}>
+              <path
+                style={{ transition: "width 2s" }}
+                fill="none"
+                stroke={isHighlighted ? highlightColor : "none"}
+                d={`${line(d.toArray())}`}
+                opacity={isHighlighted ? 0.7 : 0.2}
+              />
+              <path
+                style={{ transition: "width 2s" }}
+                fill={defaultColor}
+                d={`${line(a.toArray())}`}
+                opacity={isHighlighted ? 0.7 : 0.2}
+                onMouseEnter={() => setHighlightedState(s)}
+                onMouseLeave={() =>
+                  setHighlightedState((oldState) =>
+                    oldState === s ? null : oldState
+                  )
+                }
+                onClick={() => setIncluded(Set.of(s))}
+              />
+            </React.Fragment>
+          );
+        })
+        .toArray();
+    },
+    [
+      extent,
+      highlightedState,
+      statesToDates,
+      includedExtent,
+      height,
+      width,
+      included,
+    ]
+  );
 
   let tooltipPath: JSX.Element | null = null;
   let tooltip: JSX.Element | null = null;
@@ -318,6 +324,8 @@ const Chart: React.FC<{ rawData: RawEntry[] }> = ({ rawData }) => {
     .domain([0, height - margin.bottom])
     .range([extent.max.y, extent.min.y]);
 
+  //const flattenExtent = (e: Extent) => {};
+
   return (
     <div>
       <div style={{ float: "right", width: width, height: 0 }}>
@@ -369,15 +377,51 @@ const Chart: React.FC<{ rawData: RawEntry[] }> = ({ rawData }) => {
           }
         }}
       >
-        <svg
-          className="d3-component"
-          viewBox={`${[0, 0, width - margin.right, height - margin.bottom]}`}
-          onMouseMove={(e) => setMousePos({ x: e.pageX, y: e.pageY })}
+        <Spring
+          from={{
+            minX: includedExtent.min.x,
+            maxX: includedExtent.max.x,
+            minY: includedExtent.min.y,
+            maxY: includedExtent.max.y,
+          }}
+          to={
+            zoom
+              ? {
+                  minX: zoom.min.x,
+                  maxX: zoom.max.x,
+                  minY: zoom.min.y,
+                  maxY: zoom.max.y,
+                }
+              : {
+                  minX: includedExtent.min.x,
+                  maxX: includedExtent.max.x,
+                  minY: includedExtent.min.y,
+                  maxY: includedExtent.max.y,
+                }
+          }
         >
-          {paths}
-          {tooltipPath}
-          {tooltip}
-        </svg>
+          {(ext) => {
+            return (
+              <svg
+                className="d3-component"
+                viewBox={`${[
+                  0,
+                  0,
+                  width - margin.right,
+                  height - margin.bottom,
+                ]}`}
+                onMouseMove={(e) => setMousePos({ x: e.pageX, y: e.pageY })}
+              >
+                {paths({
+                  min: { x: ext.minX, y: ext.minY },
+                  max: { x: ext.maxX, y: ext.maxY },
+                })}
+                {tooltipPath}
+                {tooltip}
+              </svg>
+            );
+          }}
+        </Spring>
       </div>
       <div style={{ float: "left", width: margin.right }}>
         <svg style={{ overflow: "visible" }}>{stateList}</svg>
