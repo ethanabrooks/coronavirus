@@ -118,7 +118,7 @@ const Chart: React.FC<{ rawData: RawEntry[] }> = ({ rawData }) => {
             .map((entries: Collection<number, Entry>): Entry => entries.first())
             .map((e) => e.positive)
             .toOrderedMap()
-            .sortBy((v) => -v)
+            .sort().reverse()
         )
         .toOrderedMap()
         .sortBy((entries) => -(entries.last() as number)),

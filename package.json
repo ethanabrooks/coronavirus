@@ -1,6 +1,6 @@
 {
   "name": "coronavirus",
-  "homepage": "https://ethanabrooks.github.io/coronavirus",
+  "homepage": "https://covid-tracker.io/",
   "version": "0.1.0",
   "private": false,
   "dependencies": {
