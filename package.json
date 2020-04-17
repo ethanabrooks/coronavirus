@@ -34,7 +34,8 @@
     "build": "react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject",
-    "format": "prettier --write '**/*.{json,js,jsx,ts,tsx}'"
+    "format": "prettier --write '**/*.{json,js,jsx,ts,tsx}'",
+    "deploy": "aws s3 sync --acl=public-read build/ s3://covid-tracker.io/"
   },
   "eslintConfig": {
     "extends": "react-app"
