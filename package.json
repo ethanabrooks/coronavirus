@@ -22,6 +22,7 @@
     "react-dom": "^16.13.1",
     "react-router-dom": "^5.1.2",
     "react-scripts": "3.4.1",
+    "react-spring": "^8.0.27",
     "react-usa-map": "^1.4.0",
     "ts-is-present": "^1.1.1",
     "typescript": "^3.8.3"
