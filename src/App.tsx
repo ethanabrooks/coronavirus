@@ -53,32 +53,32 @@ const Chart: React.FC<{ rawData: RawEntry[] }> = ({ rawData }) => {
 
   const [zoom, setZoom] = React.useState<Extent | null>(null);
 
-  const parsedData: List<Entry> = React.useMemo(() => {
-    const maybeEntries: Option<Entry>[] = rawData.map((e: RawEntry) => {
-      return Do(option)
-        .bind("state", fromNullable(e.state))
-        .bind("unparsedCases", fromNullable(e.cases))
-        .bindL("cases", ({ unparsedCases: c }) => {
-          const parsed = parseInt(c);
-          return isNaN(parsed) ? none : some(parsed);
-        })
-        .bind("unparsedDate", fromNullable(e.date))
-        .bindL("date", ({ unparsedDate: d }) => {
-          const date = new Date(d).valueOf();
-          return isNaN(date) ? none : some(date);
-        })
-        .return((x) => x);
-    });
-    return List(
-      array.chain(
-        maybeEntries,
-        fold(
-          () => [],
-          (x: Entry) => [x]
+  const parsedData: List<Entry> = React.useMemo(
+    () =>
+      List(
+        array.chain(
+          rawData.map((e: RawEntry) =>
+            Do(option)
+              .bind("state", fromNullable(e.state))
+              .bind("unparsedCases", fromNullable(e.cases))
+              .bindL("cases", ({ unparsedCases: c }) =>
+                isNaN(+c) ? none : some(+c)
+              )
+              .bind("unparsedDate", fromNullable(e.date))
+              .bindL("date", ({ unparsedDate: d }) => {
+                const date = new Date(d).valueOf();
+                return isNaN(date) ? none : some(date);
+              })
+              .done()
+          ),
+          fold(
+            () => [],
+            (x: Entry) => [x]
+          )
         )
-      )
-    );
-  }, [rawData]);
+      ),
+    [rawData]
+  );
 
   const statesToDates = React.useMemo(
     () =>
