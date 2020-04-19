@@ -1,0 +1,54 @@
+\documentclass{article}
+    % General document formatting
+    \usepackage[margin=0.7in]{geometry}
+    \usepackage[parfill]{parskip}
+    \usepackage[utf8]{inputenc}
+    \usepackage{dsfont}
+    
+    % Related to math
+    \usepackage{amsmath,amssymb,amsfonts,amsthm}
+    \newcommand{\prob}[1]{\mathsf{P}\left(#1\right)}
+    \newcommand{\ex}[1]{\mathsf{E}\left[#1\right]}
+    \newcommand{\ind}[1]{\mathds{1}\left[#1\right]}
+    \newcommand{\probGiven}[2]{\prob{#1 \;\middle\vert\; #2}}
+
+\begin{document}
+\begin{align}
+  N&= \text{size of population}
+  \\
+  I(t)&= \text{number of infectious people (depends on $t$ time)}
+  \intertext{For any person $x$,}
+  \frac{I(t)}{N} &=\prob{\text{$x$ is infectious}} 
+  \intertext{For any two people, $x$ and $y$, who come in contact,}
+  \tau &=\probGiven{\text{$x$ infects $y$}}{\text{$x$ is infectious}} 
+  \\
+  \prob{\text{$x$ is infectious}}\tau &= \prob{\text{$x$ infects $y$}}
+  \\
+                                      &= \frac{I(t)}{N}\tau
+                                      \intertext{If $x$ contacts $k$ people,}
+  \prob{\text{$x$ does not get infected}} &= \left(1 - \frac{I(t)}{N}\tau\right)^k
+  \\
+  \prob{\text{$x$ contacts $k$ people}} &=
+  \frac{\lambda(t)^ke^{-\lambda(t)}}{k!} 
+  \intertext{which is a Poisson distribution, with a parameter $\lambda(t)$ that varies over
+  time.}
+  \ex{\text{$x$ does not get infected}} &= 
+  \sum_{k=0}^N \prob{\text{$x$ contacts $k$ people}}\prod_{y=0}^k 1 -
+\\
+                                        &= 
+  \sum_{k=0}^N \frac{\lambda(t)^ke^{-\lambda(t)}}{k!} 
+\prod_{y=0}^k 1 - \frac{I(t)}{N}\tau
+\\
+                                        &=
+  e^{-\lambda(t)}\sum_{k=0}^N \frac{\lambda(t)^k}{k!} 
+  \left(1 - \frac{I(t)}{N}\tau\right)^k
+  \\ &\approx e^{-\lambda(t)}\sum_{k=0}^\infty \frac{\lambda(t)^k}{k!} 
+  \left(1 - \frac{I(t)}{N}\tau\right)^k
+  \\ &= e^{-\lambda(t)} e^{\lambda(t)
+  \left(1 - \frac{I(t)}{N}\tau\right)}
+  \\ &= e^{- I(t)\lambda(t)\tau/N}
+  \\
+  \ex{\text{new infections}} &= \ex{\sum_{x=0}^N 1 - \ind{\text{$x$ does not get
+  infected}}}
+\end{align}
+\end{document}
