@@ -5168,6 +5168,16 @@ forwarded@~0.1.2:
   resolved "https://registry.yarnpkg.com/forwarded/-/forwarded-0.1.2.tgz#98c23dab1175657b8c0573e8ceccd91b0ff18c84"
   integrity sha1-mMI9qxF1ZXuMBXPozszZGw/xjIQ=
 
+fp-ts-contrib@^0.1.15:
+  version "0.1.15"
+  resolved "https://registry.yarnpkg.com/fp-ts-contrib/-/fp-ts-contrib-0.1.15.tgz#3b7225f7143f49b4a7719fa59bb9f04ff45bf634"
+  integrity sha512-aSuDUJAHN3QBlDf8PJ8M62l7mdUNeOWTGFFuIrK+A7tCLejGU43dDj2FM0c5dmz8CV/GXsRU3XPWCzaL5uIyvA==
+
+fp-ts@^2.5.3:
+  version "2.5.3"
+  resolved "https://registry.yarnpkg.com/fp-ts/-/fp-ts-2.5.3.tgz#7f09cc7f3e09623c6ade303d98a2cccdb2cc861f"
+  integrity sha512-lQd+hahLd8cygNoXbEHDjH/cbF6XVWlEPb8h5GXXlozjCSDxWgclvkpOoTRfBA0P+r69l9VvW1nEsSGIJRQpWw==
+
 fragment-cache@^0.2.1:
   version "0.2.1"
   resolved "https://registry.yarnpkg.com/fragment-cache/-/fragment-cache-0.2.1.tgz#4290fad27f13e89be7f33799c6bc5a0abfff0d19"
