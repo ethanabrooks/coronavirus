@@ -54,21 +54,18 @@ const Chart: React.FC<{ rawData: RawEntry[] }> = ({ rawData }) => {
   const [zoom, setZoom] = React.useState<Extent | null>(null);
 
   const parsedData: List<Entry> = React.useMemo(() => {
-    const maybeEntries: Option<Entry>[] = rawData.map((e: RawEntry) => {
-      return Do(option)
+    const maybeEntries: Option<Entry>[] = rawData.map((e: RawEntry) =>
+      Do(option)
         .bind("state", fromNullable(e.state))
         .bind("unparsedCases", fromNullable(e.cases))
-        .bindL("cases", ({ unparsedCases: c }) => {
-          const parsed = parseInt(c);
-          return isNaN(parsed) ? none : some(parsed);
-        })
+        .bindL("cases", ({ unparsedCases: c }) => (isNaN(+c) ? none : some(+c)))
         .bind("unparsedDate", fromNullable(e.date))
         .bindL("date", ({ unparsedDate: d }) => {
           const date = new Date(d).valueOf();
           return isNaN(date) ? none : some(date);
         })
-        .return((x) => x);
-    });
+        .done()
+    );
     return List(
       array.chain(
         maybeEntries,
@@ -251,9 +248,9 @@ const Chart: React.FC<{ rawData: RawEntry[] }> = ({ rawData }) => {
               <tspan
                 key={`${s}-tooltip`}
                 x={
-                  mousePos.x + 80 < width - margin.right
+                  mousePos.x + 150 < width - margin.right
                     ? mousePos.x + 30
-                    : mousePos.x - 60
+                    : mousePos.x - 150
                 }
                 dy={12}
                 fill={fill}
