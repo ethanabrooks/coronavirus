@@ -6,8 +6,12 @@ from collections import namedtuple
 
 Parameters = namedtuple("Parameters", "I N tau gamma lam alpha")
 
+slider_min = Parameters(I=0, N=0, tau=0, gamma=0, lam=0, alpha=0)
 slider_max = Parameters(I=1e3, N=1e6, tau=1, gamma=1, lam=50, alpha=1)
-slider_init = Parameters(I=1e3, N=1e6, tau=1, gamma=0, lam=50, alpha=1)
+# slider_init = Parameters(I=1e3, N=1e6, tau=1, gamma=0, lam=50, alpha=1)
+slider_init = Parameters(
+    *[mn + (mx - mn) / 2 for mn, mx in zip(slider_min, slider_max)]
+)
 slider_ypos = np.arange(len(slider_max) + 1) * 0.05
 t = np.arange(0.0, 1.0, 0.001)
 
@@ -30,13 +34,13 @@ sliders = Parameters(
         Slider(
             plt.axes([0.25, ypos, 0.65, 0.03], facecolor=axcolor),
             field,
-            0,
+            smin,
             smax,
             valinit=init,
             valstep=smax / 100,
         )
-        for field, smax, init, ypos in zip(
-            slider_max._fields, slider_max, slider_init, slider_ypos
+        for field, smin, smax, init, ypos in zip(
+            slider_max._fields, slider_min, slider_max, slider_init, slider_ypos
         )
     ]
 )
@@ -50,7 +54,7 @@ def update(val):
 for slider in sliders:
     slider.on_changed(update)
 
-resetax = plt.axes([0.8, 0.025, 0.1, 0.04])
+resetax = plt.axes([0, 0.0, 0.1, 0.04])
 button = Button(resetax, "Reset", color=axcolor, hovercolor="0.975")
 
 
