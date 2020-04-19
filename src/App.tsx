@@ -1,11 +1,20 @@
 import React from "react";
 import * as d3 from "d3";
 import { Collection, List, Set } from "immutable";
-import { isPresent } from "ts-is-present";
 import { Spring } from "react-spring/renderprops";
+import { Do } from "fp-ts-contrib/lib/Do";
+import {
+  option,
+  fromNullable,
+  fold,
+  none,
+  some,
+  Option,
+} from "fp-ts/lib/Option";
+import { array } from "fp-ts/lib/Array";
 
-type RawEntry = { state: string; positive: number; dateChecked: string };
-type Entry = { state: string; positive: number; dateChecked: number };
+type RawEntry = d3.DSVRowString<"state" | "cases" | "date">;
+type Entry = { state: string; cases: number; date: number };
 type XY = { x: number; y: number };
 type Extent = { min: XY; max: XY };
 type FlatExtent = { minX: number; minY: number; maxX: number; maxY: number };
@@ -44,16 +53,32 @@ const Chart: React.FC<{ rawData: RawEntry[] }> = ({ rawData }) => {
 
   const [zoom, setZoom] = React.useState<Extent | null>(null);
 
-  const parsedData = React.useMemo(
-    () =>
-      List(rawData)
-        .map((e) => {
-          const date = new Date(e.dateChecked).valueOf();
-          return isNaN(date) ? null : { ...e, dateChecked: date };
+  const parsedData: List<Entry> = React.useMemo(() => {
+    const maybeEntries: Option<Entry>[] = rawData.map((e: RawEntry) => {
+      return Do(option)
+        .bind("state", fromNullable(e.state))
+        .bind("unparsedCases", fromNullable(e.cases))
+        .bindL("cases", ({ unparsedCases: c }) => {
+          const parsed = parseInt(c);
+          return isNaN(parsed) ? none : some(parsed);
         })
-        .filter(isPresent),
-    [rawData]
-  );
+        .bind("unparsedDate", fromNullable(e.date))
+        .bindL("date", ({ unparsedDate: d }) => {
+          const date = new Date(d).valueOf();
+          return isNaN(date) ? none : some(date);
+        })
+        .return((x) => x);
+    });
+    return List(
+      array.chain(
+        maybeEntries,
+        fold(
+          () => [],
+          (x: Entry) => [x]
+        )
+      )
+    );
+  }, [rawData]);
 
   const statesToDates = React.useMemo(
     () =>
@@ -61,9 +86,9 @@ const Chart: React.FC<{ rawData: RawEntry[] }> = ({ rawData }) => {
         .groupBy((e) => e.state)
         .map((entries) =>
           entries
-            .groupBy((e) => e.dateChecked)
+            .groupBy((e) => e.date)
             .map((entries: Collection<number, Entry>): Entry => entries.first())
-            .map((e) => e.positive)
+            .map((e) => e.cases)
             .toOrderedMap()
             .sortBy((_, k) => k)
         )
@@ -79,11 +104,11 @@ const Chart: React.FC<{ rawData: RawEntry[] }> = ({ rawData }) => {
   const initialExtent = React.useMemo(() => {
     const [left, right] = d3.extent(
       parsedData.toArray(),
-      (d) => d.dateChecked
+      (d) => d.date
     ) as number[];
     const [top, bottom] = d3.extent(
       parsedData.filter((e) => included.has(e.state)).toArray(),
-      (d) => d.positive
+      (d) => d.cases
     ) as number[];
     return {
       min: { x: left, y: top },
@@ -94,11 +119,11 @@ const Chart: React.FC<{ rawData: RawEntry[] }> = ({ rawData }) => {
   const includedExtent = React.useMemo(() => {
     const [left, right] = d3.extent(
       parsedData.filter((e) => included.has(e.state)).toArray(),
-      (d) => d.dateChecked
+      (d) => d.date
     ) as number[];
     const [top, bottom] = d3.extent(
       parsedData.filter((e) => included.has(e.state)).toArray(),
-      (d) => d.positive
+      (d) => d.cases
     ) as number[];
     return {
       min: { x: left, y: top },
@@ -112,13 +137,13 @@ const Chart: React.FC<{ rawData: RawEntry[] }> = ({ rawData }) => {
     () =>
       parsedData
         .groupBy((e) => {
-          return datediff(initialExtent.min.x, e.dateChecked);
+          return datediff(initialExtent.min.x, e.date);
         })
         .map((entries) =>
           entries
             .groupBy((e) => e.state)
             .map((entries: Collection<number, Entry>): Entry => entries.first())
-            .map((e) => e.positive)
+            .map((e) => e.cases)
             .toOrderedMap()
             .sortBy((v) => -v)
         )
@@ -134,7 +159,6 @@ const Chart: React.FC<{ rawData: RawEntry[] }> = ({ rawData }) => {
 
   const paths = React.useMemo(
     () => (extent) => {
-      console.log(extent);
       const x = d3
         .scaleLinear()
         .domain([extent.min.x, extent.max.x])
@@ -416,10 +440,14 @@ export default function () {
   const [state, setState] = React.useState<State>({ type: "loading" });
 
   React.useEffect(() => {
-    fetch("https://covidtracking.com/api/states/daily")
-      .then((res) => res.json())
+    fetch(
+      "https://raw.githubusercontent.com/nytimes/covid-19-data/master/us-states.csv"
+    )
+      .then((response) =>
+        response.ok ? response.text() : Promise.reject(response.status)
+      )
       .then(
-        (rawData) => setState({ type: "loaded", rawData }),
+        (text) => setState({ type: "loaded", rawData: d3.csvParse(text) }),
         (error) => setState({ type: "error", error })
       );
   }, []);
