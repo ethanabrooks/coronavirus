@@ -248,9 +248,9 @@ const Chart: React.FC<{ rawData: RawEntry[] }> = ({ rawData }) => {
               <tspan
                 key={`${s}-tooltip`}
                 x={
-                  mousePos.x + 80 < width - margin.right
+                  mousePos.x + 150 < width - margin.right
                     ? mousePos.x + 30
-                    : mousePos.x - 60
+                    : mousePos.x - 150
                 }
                 dy={12}
                 fill={fill}
