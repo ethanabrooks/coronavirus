@@ -29,13 +29,12 @@
   },
   "scripts": {
     "predeploy": "npm run build",
-    "deploy": "gh-pages -d build",
+    "deploy": "aws s3 sync --acl=public-read build/ s3://covid-tracker.io/",
     "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject",
-    "format": "prettier --write '**/*.{json,js,jsx,ts,tsx}'",
-    "deploy": "aws s3 sync --acl=public-read build/ s3://covid-tracker.io/"
+    "format": "prettier --write '**/*.{json,js,jsx,ts,tsx}'"
   },
   "eslintConfig": {
     "extends": "react-app"
